@@ -3,16 +3,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-  Alert,
-  Image,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Switch,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { auth } from "../../Firebase/firebaseConfig";
+import { signOut } from "firebase/auth";
 
 const STORAGE_KEY = 'signupDraft';
 
@@ -21,6 +24,7 @@ export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState<string>('Settings');
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [darkMode, setDarkMode] = useState(false);
+    const [logoutModalVisible, setLogoutModalVisible] = useState(false);
 
     // ── Profile data ──────────────────────────────────────────
     const [photoUri,     setPhotoUri]     = useState<string | null>(null);
@@ -50,6 +54,17 @@ export default function SettingsPage() {
         }, [])
     );
 
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            await AsyncStorage.clear();
+            setLogoutModalVisible(false);
+            router.replace('/');
+        } catch (error: any) {
+            Alert.alert('Error', error.message);
+        }
+    };
+
     const bottomTabs = [
         { name: 'Home',     icon: 'home-outline' },
         { name: 'Reports',  icon: 'document-text-outline' },
@@ -78,13 +93,13 @@ export default function SettingsPage() {
     };
 
     const SettingsRow: React.FC<SettingsRowProps> = ({
-        icon,
-        iconColor = '#004F7F',
-        label,
-        onPress,
-        rightElement,
-        isLast = false,
-    }) => (
+                                                         icon,
+                                                         iconColor = '#004F7F',
+                                                         label,
+                                                         onPress,
+                                                         rightElement,
+                                                         isLast = false,
+                                                     }) => (
         <TouchableOpacity
             style={[styles.settingsRow, !isLast && styles.settingsRowBorder]}
             onPress={onPress}
@@ -102,6 +117,48 @@ export default function SettingsPage() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
+
+            {/* ── Logout Modal ── */}
+            <Modal
+                transparent
+                visible={logoutModalVisible}
+                animationType="fade"
+                onRequestClose={() => setLogoutModalVisible(false)}
+            >
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalBox}>
+                        {/* Icon */}
+                        <View style={styles.modalIconWrap}>
+                            <Ionicons name="log-out-outline" size={28} color="#E74C3C" />
+                        </View>
+
+                        {/* Text */}
+                        <Text style={styles.modalTitle}>
+                            Are you sure you want to{'\n'}logout from this account?
+                        </Text>
+                        <Text style={styles.modalEmail}>{profileEmail}</Text>
+
+                        {/* Buttons */}
+                        <View style={styles.modalButtons}>
+                            <TouchableOpacity
+                                style={styles.stayButton}
+                                onPress={() => setLogoutModalVisible(false)}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.stayButtonText}>Stay</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.logoutButton}
+                                onPress={handleLogout}
+                                activeOpacity={0.8}
+                            >
+                                <Text style={styles.logoutButtonText}>Logout</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity
@@ -208,12 +265,7 @@ export default function SettingsPage() {
                         icon="log-out-outline"
                         iconColor="#E74C3C"
                         label="Log out"
-                        onPress={() =>
-                            Alert.alert('Log out', 'Are you sure you want to log out?', [
-                                { text: 'Cancel', style: 'cancel' },
-                                { text: 'Log out', style: 'destructive', onPress: () => {} },
-                            ])
-                        }
+                        onPress={() => setLogoutModalVisible(true)}
                         isLast
                     />
                 </View>
@@ -288,6 +340,80 @@ const styles = StyleSheet.create({
         backgroundColor: '#D8E9F0',
     },
 
+    // ── Logout Modal ──────────────────────────────────────────
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.35)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalBox: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 24,
+        paddingVertical: 32,
+        paddingHorizontal: 28,
+        width: '82%',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+        elevation: 10,
+    },
+    modalIconWrap: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: '#FDECEA',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    modalTitle: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#1F2937',
+        textAlign: 'center',
+        lineHeight: 24,
+        marginBottom: 8,
+    },
+    modalEmail: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#004F7F',
+        textDecorationLine: 'underline',
+        marginBottom: 28,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    stayButton: {
+        flex: 1,
+        backgroundColor: '#004F7F',
+        borderRadius: 14,
+        paddingVertical: 14,
+        alignItems: 'center',
+    },
+    stayButtonText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '700',
+    },
+    logoutButton: {
+        flex: 1,
+        backgroundColor: '#E74C3C',
+        borderRadius: 14,
+        paddingVertical: 14,
+        alignItems: 'center',
+    },
+    logoutButtonText: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '700',
+    },
+
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -322,7 +448,6 @@ const styles = StyleSheet.create({
     scrollView: { flex: 1 },
     scrollContent: { padding: 16, paddingBottom: 110 },
 
-    // ── Profile Card ──────────────────────────────────────────
     profileCard: {
         backgroundColor: '#FFFFFF',
         borderRadius: 16,
@@ -407,7 +532,6 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
 
-    // ── Bottom Nav ────────────────────────────────────────────
     bottomNavContainer: {
         position: 'absolute',
         bottom: 0,
