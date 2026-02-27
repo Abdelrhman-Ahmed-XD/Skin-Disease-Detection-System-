@@ -1,28 +1,21 @@
 import React, { useState, useEffect } from "react";
 import {
-    View,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    Image,
-    KeyboardAvoidingView,
-    ScrollView,
-    Platform, Alert,
+  View,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Label } from "@react-navigation/elements";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { auth, db } from "../Firebase/firebaseConfig";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-
-
-
-
 
 const STORAGE_KEY = "signupDraft";
 
@@ -134,39 +127,6 @@ export default function SignUp() {
       console.log(err);
     }
   };
-    const handleSignUp = async () => {
-
-        try {
-            const userCredential = await createUserWithEmailAndPassword(
-                auth,
-                email,
-                password
-            );
-            const user = userCredential.user;
-
-            await setDoc(doc(db, "users", user.uid), {
-                firstName,
-                lastName,
-                email,
-                createdAt: new Date().toISOString(),
-                uid: user.uid,
-            });
-
-            // Save uid locally
-            const saved = await AsyncStorage.getItem(STORAGE_KEY);
-            const data = saved ? JSON.parse(saved) : {};
-            await AsyncStorage.setItem(
-                STORAGE_KEY,
-                JSON.stringify({ ...data, uid: user.uid })
-            );
-
-            Router.push("/Gender");
-        } catch (error: any) {
-            console.log("FULL ERROR:", error);
-            Alert.alert("Sign Up Failed", error.message);
-        }
-    };
-
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -238,20 +198,8 @@ export default function SignUp() {
                     : "#BFC6CC",
                 },
               ]}
-              onPress={async () => {
-                  const saved = await AsyncStorage.getItem(STORAGE_KEY);
-                  const existing = saved ? JSON.parse(saved) : {};
-                  await AsyncStorage.setItem(
-                      STORAGE_KEY,
-                      JSON.stringify({
-                          ...existing,
-                          email,
-                          firstName,
-                          lastName,
-                      })
-                  );
-                  router.push("/Verifyemail");
-              }}            >
+              onPress={() => router.push("/Verifyemail")}
+            >
               <Text style={styles.verifyText}>
                 {isEmailVerified ? "Verified ✓" : "Verify"}
               </Text>
@@ -316,13 +264,13 @@ export default function SignUp() {
           {!!confirmError && <Text style={styles.errorText}>{confirmError}</Text>}
 
           {/* SignUp Button */}
-            <TouchableOpacity
-                disabled={!isFormValid}
-                onPress={handleSignUp}
-                style={[styles.signUpBtn, { backgroundColor: isFormValid ? "#004F7F" : "#B0B0B0" }]}
-            >
-                <Text style={styles.signUpText}>Sign Up</Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            disabled={!isFormValid}
+            onPress={() => Router.push("/Gender")}
+            style={[styles.signUpBtn, { backgroundColor: isFormValid ? "#004F7F" : "#B0B0B0" }]}
+          >
+            <Text style={styles.signUpText}>Sign Up</Text>
+          </TouchableOpacity>
 
           <Text style={styles.termsText}>
             By creating an account or signing you agree to our Terms and Conditions

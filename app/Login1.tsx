@@ -42,9 +42,6 @@ export default function Login1() {
     else if (!emailRegex.test(email)) setEmailError("Please enter a valid email");
     else setEmailError("");
   }, [email]);
-
-
-
   const handlePressIn = () => {
     Animated.spring(scaleAnim, { toValue: 0.96, useNativeDriver: true }).start();
   };
