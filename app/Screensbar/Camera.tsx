@@ -15,9 +15,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth, db } from "../../Firebase/firebaseConfig";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
 
 const MOLES_STORAGE_KEY = 'savedMoles';
 const { width } = Dimensions.get('window');

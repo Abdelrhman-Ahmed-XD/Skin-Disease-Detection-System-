@@ -17,12 +17,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { auth } from "../Firebase/firebaseConfig";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Alert } from "react-native";
-
-
 
 export default function Login1() {
   const Router = useRouter();
@@ -48,40 +42,6 @@ export default function Login1() {
     else if (!emailRegex.test(email)) setEmailError("Please enter a valid email");
     else setEmailError("");
   }, [email]);
-
-
-
-  const isFormValid =
-    email &&
-    password.length >= 8 &&
-    /[A-Z]/.test(password) &&
-    /[a-z]/.test(password) &&
-    /[0-9]/.test(password) &&
-    /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) &&
-    !emailError &&
-    !passwordError;
-    const handleLogin = async () => {
-        try {
-            const userCredential = await signInWithEmailAndPassword(
-                auth,
-                email,
-                password
-            );
-            const user = userCredential.user;
-
-            // Save uid locally
-            const saved = await AsyncStorage.getItem("signupDraft");
-            const data = saved ? JSON.parse(saved) : {};
-            await AsyncStorage.setItem(
-                "signupDraft",
-                JSON.stringify({ ...data, uid: user.uid })
-            );
-
-            Router.push("/Screensbar/FirstHomePage");
-        } catch (error: any) {
-            Alert.alert("Login Failed", error.message);
-        }
-    };
   const handlePressIn = () => {
     Animated.spring(scaleAnim, { toValue: 0.96, useNativeDriver: true }).start();
   };
@@ -155,13 +115,13 @@ export default function Login1() {
           {/* Login Button */}
           <Animated.View style={{ transform: [{ scale: scaleAnim }], marginTop: 25 }}>
             <TouchableOpacity
-              disabled={!isFormValid}
-              onPress={handleLogin}
+              
+              onPress={() => Router.push("/Screensbar/FirstHomePage")}
               onPressIn={handlePressIn}
               onPressOut={handlePressOut}
               style={[
                 styles.loginBtn,
-                { backgroundColor: isFormValid ? "#004F7F" : "#B0B0B0" },
+                { backgroundColor: "#004F7F"  },
               ]}
             >
               <Text style={styles.loginText}>Login</Text>
@@ -189,7 +149,7 @@ export default function Login1() {
           </View>
 
           <View style={styles.signupRow}>
-            <Text>Don&#39;t have an account? </Text>
+            <Text>Don't have an account? </Text>
             <TouchableOpacity onPress={() => Router.push("/SignUp")}>
               <Text style={styles.signUpText}>Sign Up</Text>
             </TouchableOpacity>
