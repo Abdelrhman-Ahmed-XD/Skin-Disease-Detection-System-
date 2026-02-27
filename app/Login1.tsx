@@ -33,8 +33,6 @@ export default function Login1() {
 
   const openGoogle = () => Linking.openURL("https://accounts.google.com");
   const openFacebook = () => Linking.openURL("https://www.facebook.com/login/");
-  const openApple = () => Linking.openURL("https://appleid.apple.com/sign-in");
-
   // Email validation
   useEffect(() => {
     const emailRegex = /^\S+@\S+\.\S+$/;
@@ -142,9 +140,6 @@ export default function Login1() {
             </TouchableOpacity>
             <TouchableOpacity style={styles.socialBtn} onPress={openFacebook}>
               <Ionicons name="logo-facebook" size={24} color="#1877F2" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.socialBtn} onPress={openApple}>
-              <Ionicons name="logo-apple" size={24} color="#000" />
             </TouchableOpacity>
           </View>
 
