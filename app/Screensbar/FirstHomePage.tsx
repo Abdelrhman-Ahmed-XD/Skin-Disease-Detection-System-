@@ -2,21 +2,23 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
+import { auth, db } from "../../Firebase/firebaseConfig";
+import { doc, getDoc } from "firebase/firestore";
 import {
-  Alert,
-  Animated,
-  Dimensions,
-  Image,
-  PanResponder,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Animated,
+    Dimensions,
+    Image,
+    PanResponder,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const STORAGE_KEY      = 'signupDraft';
+const STORAGE_KEY       = 'signupDraft';
 const MOLES_STORAGE_KEY = 'savedMoles';
 
 const { width, height } = Dimensions.get('window');
@@ -59,7 +61,7 @@ type BodyView = 'front' | 'back';
 export default function FirstHomePage() {
     const router = useRouter();
     const [userName, setUserName] = useState('');
-    const [photoUri, setPhotoUri] = useState<string | null>(null);   // ← جديد
+    const [photoUri, setPhotoUri] = useState<string | null>(null);
     const [bodyView, setBodyView] = useState<BodyView>('front');
     const [moles,    setMoles]    = useState<Mole[]>([]);
     const [activeTab, setActiveTab] = useState<string>('Home');
@@ -73,10 +75,10 @@ export default function FirstHomePage() {
     const translateX = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(0)).current;
 
-    const scaleVal   = useRef(1);
-    const txVal      = useRef(0);
-    const tyVal      = useRef(0);
-    const bodyViewRef   = useRef<BodyView>('front');
+    const scaleVal       = useRef(1);
+    const txVal          = useRef(0);
+    const tyVal          = useRef(0);
+    const bodyViewRef    = useRef<BodyView>('front');
     const bodyWrapperRef = useRef<any>(null);
 
     useEffect(() => {
@@ -226,16 +228,29 @@ export default function FirstHomePage() {
 
             const loadUserData = async () => {
                 try {
+                    // Load from AsyncStorage first (instant)
                     const saved = await AsyncStorage.getItem(STORAGE_KEY);
                     if (saved) {
                         const data = JSON.parse(saved);
                         setUserName(`${data.firstName || ''} ${data.lastName || ''}`.trim());
                         setPhotoUri(data.photoUri || null);
                     }
+
+                    // Then fetch from Firestore (always up to date)
+                    const currentUser = auth.currentUser;
+                    if (currentUser) {
+                        const docSnap = await getDoc(doc(db, 'users', currentUser.uid));
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
+                            const fullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+                            setUserName(fullName);
+                        }
+                    }
                 } catch (err) {
                     console.log('Error loading user data:', err);
                 }
             };
+
             loadUserData();
         }, [])
     );
@@ -290,10 +305,10 @@ export default function FirstHomePage() {
     const handleTabPress = (tabName: string) => {
         setActiveTab(tabName);
         switch (tabName) {
-            case 'Camera':   router.push('/Screensbar/Camera');        break;
-            case 'History':  router.push('/Screensbar/History');       break;
-            case 'Reports':  router.push('/Screensbar/Reports');       break;
-            case 'Settings': router.push('/Screensbar/Setting');       break;
+            case 'Camera':   router.push('/Screensbar/Camera');   break;
+            case 'History':  router.push('/Screensbar/History');  break;
+            case 'Reports':  router.push('/Screensbar/Reports');  break;
+            case 'Settings': router.push('/Screensbar/Setting');  break;
         }
     };
 
@@ -304,7 +319,7 @@ export default function FirstHomePage() {
             {/* Header */}
             <View style={styles.headerCard}>
                 <View style={styles.headerContent}>
-                    {/* ── Profile icon / photo ── */}
+                    {/* Profile icon / photo */}
                     <TouchableOpacity
                         style={styles.profileIconContainer}
                         onPress={() => router.push('/Settingsoptions/Editprofile')}
@@ -335,7 +350,7 @@ export default function FirstHomePage() {
             {/* Title */}
             <View style={styles.titleContainer}>
                 <Text style={styles.title}>
-                    Let's Check your <Text style={styles.titleBold}>Skin</Text>
+                    Let&#39;s Check your <Text style={styles.titleBold}>Skin</Text>
                 </Text>
             </View>
 
@@ -362,7 +377,6 @@ export default function FirstHomePage() {
                             resizeMode="contain"
                         />
 
-                        {/* نقاط الخالات المحفوظة */}
                         {currentMoles.map((mole) => {
                             const MARKER_SIZE = 28;
                             const markerLeft  = mole.x - (MARKER_SIZE / 2);
@@ -382,10 +396,10 @@ export default function FirstHomePage() {
                                             router.push({
                                                 pathname: '/Screensbar/Camera',
                                                 params: {
-                                                    tapX:            mole.x.toFixed(2),
-                                                    tapY:            mole.y.toFixed(2),
-                                                    bodyView:        mole.bodyView,
-                                                    moleId:          mole.id,
+                                                    tapX:             mole.x.toFixed(2),
+                                                    tapY:             mole.y.toFixed(2),
+                                                    bodyView:         mole.bodyView,
+                                                    moleId:           mole.id,
                                                     existingPhotoUri: mole.photoUri || '',
                                                 },
                                             });
@@ -551,18 +565,14 @@ const styles = StyleSheet.create({
         shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
     },
-    headerContent:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    profileIconContainer:  {
+    headerContent:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    profileIconContainer: {
         width: 52, height: 52, borderRadius: 26,
         backgroundColor: '#E8F4F8', justifyContent: 'center', alignItems: 'center',
         borderWidth: 2, borderColor: '#C5E3ED',
-        overflow: 'hidden',   // ← مهم عشان الصورة تتقص دايري
+        overflow: 'hidden',
     },
-    profilePhoto: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-    },
+    profilePhoto:      { width: 52, height: 52, borderRadius: 26 },
     welcomeContainer:  { flex: 1, marginLeft: 12, flexDirection: 'row', alignItems: 'center' },
     welcomeLabel:      { fontSize: 18, color: '#00A3A3', fontStyle: 'italic' },
     userName:          { fontSize: 18, fontWeight: '700', color: '#1F2937', marginTop: 2 },
