@@ -176,7 +176,7 @@ export default function Verifyemail() {
                 />
 
                 <Text style={{ marginTop: 15, paddingHorizontal: 5, textAlign: "center", fontSize: 22 }}>
-                    We've sent a verification code to
+                    We&#39;ve sent a verification code to
                 </Text>
                 <Text style={{ marginTop: 2, textAlign: "center", fontSize: 18, fontWeight: "bold" }}>
                     {email}
