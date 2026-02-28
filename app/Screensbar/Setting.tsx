@@ -1,22 +1,24 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { signOut } from "firebase/auth";
 import React, { useState } from 'react';
 import {
-    Alert,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Switch,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth } from "../../Firebase/firebaseConfig";
-import { signOut } from "firebase/auth";
+import { useTheme } from "../ThemeContext";
 
+const { isDark, toggleTheme } = useTheme();
 const STORAGE_KEY = 'signupDraft';
 
 export default function SettingsPage() {
@@ -218,18 +220,18 @@ export default function SettingsPage() {
                             />
                         }
                     />
-                    <SettingsRow
-                        icon="moon-outline"
-                        label="Dark Mode"
-                        rightElement={
-                            <Switch
-                                value={darkMode}
-                                onValueChange={setDarkMode}
-                                trackColor={{ false: '#E5E7EB', true: '#C5E3ED' }}
-                                thumbColor={darkMode ? '#004F7F' : '#9CA3AF'}
-                            />
-                        }
-                    />
+                  <SettingsRow
+  icon="moon-outline"
+  label="Dark Mode"
+  rightElement={
+    <Switch
+      value={isDark}
+      onValueChange={toggleTheme}
+      trackColor={{ false: '#E5E7EB', true: '#C5E3ED' }}
+      thumbColor={isDark ? '#004F7F' : '#9CA3AF'}
+    />
+  }
+/>
                     <SettingsRow
                         icon="color-palette-outline"
                         label="Customize"
@@ -250,12 +252,6 @@ export default function SettingsPage() {
                         icon="help-circle-outline"
                         label="Help & Support"
                         onPress={() => router.push('/')}
-                    />
-                    <SettingsRow
-                        icon="document-text-outline"
-                        label="Privacy Policy"
-                        onPress={() => router.push('/')}
-                        isLast
                     />
                 </View>
 
