@@ -78,7 +78,7 @@ export default function ChangePassword() {
       {
         text: "Change",
         style: "destructive",
-        onPress: () => router.push("/Settingsoptions/Editprofile"),
+        onPress: () => router.push("/Settingsoptions/ConfirmCP"),
       },
     ]
   );

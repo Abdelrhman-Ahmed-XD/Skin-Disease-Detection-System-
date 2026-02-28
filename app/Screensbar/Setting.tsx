@@ -95,13 +95,13 @@ export default function SettingsPage() {
     };
 
     const SettingsRow: React.FC<SettingsRowProps> = ({
-                                                         icon,
-                                                         iconColor = '#004F7F',
-                                                         label,
-                                                         onPress,
-                                                         rightElement,
-                                                         isLast = false,
-                                                     }) => (
+              icon,
+              iconColor = '#004F7F',
+              label,
+              onPress,
+              rightElement,
+              isLast = false,
+          }) => ( 
         <TouchableOpacity
             style={[styles.settingsRow, !isLast && styles.settingsRowBorder]}
             onPress={onPress}
@@ -246,12 +246,12 @@ export default function SettingsPage() {
                     <SettingsRow
                         icon="information-circle-outline"
                         label="About"
-                        onPress={() => router.push('/')}
+                        onPress={() => router.push('/Settingsoptions/About')}
                     />
                     <SettingsRow
                         icon="help-circle-outline"
                         label="Help & Support"
-                        onPress={() => router.push('/')}
+                        onPress={() => router.push('/Settingsoptions/Help')}
                     />
                 </View>
 
