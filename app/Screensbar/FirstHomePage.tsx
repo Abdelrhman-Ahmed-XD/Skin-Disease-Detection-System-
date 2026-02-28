@@ -1,22 +1,22 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
-import { auth, db } from "../../Firebase/firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
+import React, { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    Image,
-    PanResponder,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  Dimensions,
+  Image,
+  PanResponder,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { auth, db } from "../../Firebase/firebaseConfig";
 
 const STORAGE_KEY       = 'signupDraft';
 const MOLES_STORAGE_KEY = 'savedMoles';
@@ -341,7 +341,7 @@ export default function FirstHomePage() {
                             {userName}
                         </Text>
                     </View>
-                    <TouchableOpacity style={styles.notificationButton}>
+                    <TouchableOpacity style={styles.notificationButton} onPress={() => router.push('/Screensbar/Notifications')}>
                         <Ionicons name="notifications-outline" size={28} color="#00A3A3" />
                     </TouchableOpacity>
                 </View>
