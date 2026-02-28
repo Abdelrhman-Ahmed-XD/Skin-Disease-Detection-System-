@@ -605,7 +605,7 @@ const styles = StyleSheet.create({
     toggleText:           { fontSize: 14, fontWeight: '600', color: '#6B7280' },
     toggleTextActive:     { color: '#FFFFFF', fontWeight: '700' },
     bottomNavContainer:   { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center' },
-    bottomNav:            { flexDirection: 'row', backgroundColor: '#FFFFFF', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#E5E7EB', width: '100%', paddingBottom: 16 },
+    bottomNav:            { flexDirection: 'row', backgroundColor: '#FFFFFF', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#E5E7EB', width: '100%', paddingBottom: 16,borderTopLeftRadius:20,borderTopRightRadius:20 },
     navCenterSpacer:      { flex: 1 },
     navItem:              { flex: 1, alignItems: 'center', justifyContent: 'center' },
     navIcon:              { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F9FAFB', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },

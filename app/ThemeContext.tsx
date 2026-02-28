@@ -15,6 +15,13 @@ export const lightColors = {
   border:      "#E5E7EB",
   input:       "#FFFFFF",
   primary:     "#004F7F",
+  accent:      "#00A3A3",
+  navBg:       "#FFFFFF",
+  navText:     "#6B7280",
+  navActive:   "#004F7F",
+  toggleBg:    "#B8D4DE",
+  badgeBg:     "#EF4444",
+  statusBar:   "dark-content" as "dark-content" | "light-content",
 };
 
 export const darkColors = {
@@ -25,6 +32,13 @@ export const darkColors = {
   border:      "#374151",
   input:       "#1E2A35",
   primary:     "#004F7F",
+  accent:      "#00A3A3",
+  navBg:       "#1E2A35",
+  navText:     "#9CA3AF",
+  navActive:   "#7DD3FC",
+  toggleBg:    "#374151",
+  badgeBg:     "#EF4444",
+  statusBar:   "light-content" as "dark-content" | "light-content",
 };
 
 const ThemeContext = createContext<ThemeContextType>({
@@ -36,7 +50,6 @@ const ThemeContext = createContext<ThemeContextType>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [isDark, setIsDark] = useState(false);
 
-  // لود الإعداد المحفوظ
   useEffect(() => {
     AsyncStorage.getItem("darkMode").then((val) => {
       if (val === "true") setIsDark(true);

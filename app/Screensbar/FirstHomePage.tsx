@@ -17,14 +17,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from "../../Firebase/firebaseConfig";
+import { useCustomize } from '../Customize/Customizecontext';
 import {
   NOTIFICATIONS_ENABLED_KEY,
   NOTIFICATIONS_STORAGE_KEY,
-} from '../Screensbar/notificationsData'; // ← adjust path as needed
+} from '../Screensbar/notificationsData';
+import { useTheme } from '../ThemeContext';
 
 const STORAGE_KEY       = 'signupDraft';
 const MOLES_STORAGE_KEY = 'savedMoles';
-
 const { width, height } = Dimensions.get('window');
 
 function inRect(nx: number, ny: number, x1: number, y1: number, x2: number, y2: number) {
@@ -49,14 +50,22 @@ function checkBodyHit(nx: number, ny: number, view: 'front' | 'back'): boolean {
     return false;
 }
 
-type Mole = {
-    id: string; x: number; y: number; timestamp: number;
-    photoUri?: string; bodyView: 'front' | 'back';
-};
+type Mole     = { id: string; x: number; y: number; timestamp: number; photoUri?: string; bodyView: 'front' | 'back'; };
 type BodyView = 'front' | 'back';
 
 export default function FirstHomePage() {
     const router = useRouter();
+    const { colors, isDark } = useTheme();
+    const { settings } = useCustomize();
+
+    // ─── Customize styles (applied throughout the screen) ───
+    const customText = {
+        fontSize:   settings.fontSize,
+        color:      settings.textColor,
+        fontFamily: settings.fontFamily === 'System' ? undefined : settings.fontFamily,
+    };
+    const customBg = { backgroundColor: isDark ? colors.background : settings.backgroundColor };
+
     const [userName, setUserName]   = useState('');
     const [photoUri, setPhotoUri]   = useState<string | null>(null);
     const [bodyView, setBodyView]   = useState<BodyView>('front');
@@ -167,13 +176,11 @@ export default function FirstHomePage() {
         },
     })).current;
 
-    // ── Load unread count + notifications enabled status ──────────────────────
     const loadNotifData = async () => {
         try {
             const enabledVal = await AsyncStorage.getItem(NOTIFICATIONS_ENABLED_KEY);
             const enabled = enabledVal === null ? true : enabledVal === 'true';
             setNotificationsEnabled(enabled);
-
             if (enabled) {
                 const saved = await AsyncStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
                 if (saved) {
@@ -181,14 +188,13 @@ export default function FirstHomePage() {
                     setUnreadCount(notifs.filter((n: any) => !n.read).length);
                 }
             } else {
-                setUnreadCount(0); // hide badge when disabled
+                setUnreadCount(0);
             }
         } catch (err) {
             console.log('Error loading notif data:', err);
         }
     };
 
-    // ── Load user data + notification status on every focus ───────────────────
     useFocusEffect(
         React.useCallback(() => {
             setActiveTab('Home');
@@ -213,7 +219,7 @@ export default function FirstHomePage() {
                 }
             };
             loadUserData();
-            loadNotifData(); // ← reload badge + enabled state every focus
+            loadNotifData();
         }, [])
     );
 
@@ -267,33 +273,31 @@ export default function FirstHomePage() {
     };
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <StatusBar barStyle="dark-content" backgroundColor="#D8E9F0" />
+        <SafeAreaView style={[styles.container, customBg]} edges={['top']}>
+            <StatusBar barStyle={colors.statusBar} backgroundColor={isDark ? colors.background : settings.backgroundColor} />
 
             {/* Header */}
-            <View style={styles.headerCard}>
+            <View style={[styles.headerCard, { backgroundColor: colors.card }]}>
                 <View style={styles.headerContent}>
-                    <TouchableOpacity style={styles.profileIconContainer} onPress={() => router.push('/Settingsoptions/Editprofile')}>
+                    <TouchableOpacity style={[styles.profileIconContainer, { backgroundColor: isDark ? '#2A3F50' : '#E8F4F8', borderColor: isDark ? '#374151' : '#C5E3ED' }]} onPress={() => router.push('/Settingsoptions/Editprofile')}>
                         {photoUri ? (
                             <Image source={{ uri: photoUri }} style={styles.profilePhoto} resizeMode="cover" />
                         ) : (
-                            <Ionicons name="person-outline" size={32} color="#004F7F" />
+                            <Ionicons name="person-outline" size={32} color={colors.primary} />
                         )}
                     </TouchableOpacity>
 
                     <View style={styles.welcomeContainer}>
-                        <Text style={styles.welcomeLabel}>Welcome,</Text>
-                        <Text style={{ fontWeight: 'bold', marginLeft: 4, marginTop: 3, fontSize: 17 }}>{userName}</Text>
+                        <Text style={[styles.welcomeLabel, customText, { color: colors.accent }]}>Welcome,</Text>
+                        <Text style={[styles.userName, customText, { fontWeight: 'bold' }]}>{userName}</Text>
                     </View>
 
-                    {/* Notification Button */}
-                    <TouchableOpacity style={styles.notificationButton} onPress={() => router.push('/Screensbar/Notifications')}>
+                    <TouchableOpacity style={[styles.notificationButton, { backgroundColor: isDark ? '#1E2A35' : '#F9FAFB' }]} onPress={() => router.push('/Screensbar/Notifications')}>
                         <Ionicons
                             name={notificationsEnabled ? 'notifications-outline' : 'notifications-off-outline'}
                             size={28}
-                            color={notificationsEnabled ? '#00A3A3' : '#9CA3AF'}
+                            color={notificationsEnabled ? colors.accent : colors.subText}
                         />
-                        {/* Badge: only show if enabled AND there are unread */}
                         {notificationsEnabled && unreadCount > 0 && (
                             <View style={styles.notifBadge}>
                                 <Text style={styles.notifBadgeText}>
@@ -307,16 +311,18 @@ export default function FirstHomePage() {
 
             {/* Title */}
             <View style={styles.titleContainer}>
-                <Text style={styles.title}>Let&#39;s Check your <Text style={styles.titleBold}>Skin</Text></Text>
+                <Text style={[styles.title, customText]}>
+                    Let&apos;s Check your <Text style={[styles.titleBold, customText]}>Skin</Text>
+                </Text>
             </View>
 
             {/* Body */}
-            <View style={styles.bodyMainContainer}>
+            <View style={[styles.bodyMainContainer, customBg]}>
                 <View style={styles.bodyTouchable} {...panResponder.panHandlers} ref={(r) => { bodyWrapperRef.current = r; }}>
-                    <Animated.View style={[styles.bodyImageWrapper, { transform: [{ scale }, { translateX }, { translateY }] }]}>
+                    <Animated.View style={[styles.bodyImageWrapper, customBg, { transform: [{ scale }, { translateX }, { translateY }] }]}>
                         <Image
                             source={bodyView === 'front' ? require('../../assets/images/body-front.png') : require('../../assets/images/body-back.png')}
-                            style={styles.bodyImage}
+                            style={[styles.bodyImage, customBg]}
                             resizeMode="contain"
                         />
                         {currentMoles.map((mole) => {
@@ -341,27 +347,27 @@ export default function FirstHomePage() {
 
             {/* Toggle Front/Back */}
             <View style={styles.bottomControls}>
-                <View style={styles.toggleWrapper}>
+                <View style={[styles.toggleWrapper, { backgroundColor: isDark ? '#1E2A35' : '#B8D4DE' }]}>
                     <TouchableOpacity onPress={() => toggleBodyView('front')} style={[styles.toggleButton, bodyView === 'front' && styles.toggleButtonActive]}>
-                        <Text style={[styles.toggleText, bodyView === 'front' && styles.toggleTextActive]}>Front</Text>
+                        <Text style={[styles.toggleText, customText, { color: bodyView === 'front' ? '#FFFFFF' : colors.subText }]}>Front</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => toggleBodyView('back')} style={[styles.toggleButton, bodyView === 'back' && styles.toggleButtonActive]}>
-                        <Text style={[styles.toggleText, bodyView === 'back' && styles.toggleTextActive]}>Back</Text>
+                        <Text style={[styles.toggleText, customText, { color: bodyView === 'back' ? '#FFFFFF' : colors.subText }]}>Back</Text>
                     </TouchableOpacity>
                 </View>
             </View>
 
             {/* Bottom Nav */}
             <View style={styles.bottomNavContainer}>
-                <View style={styles.bottomNav}>
+                <View style={[styles.bottomNav, { backgroundColor: colors.navBg, borderTopColor: colors.border }]}>
                     {['Home', 'Reports'].map((tabName) => {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
-                                <View style={[styles.navIcon, activeTab === tab.name && styles.navIconActive]}>
-                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? '#004F7F' : '#6B7280'} />
+                                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
+                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? colors.navActive : colors.navText} />
                                 </View>
-                                <Text style={[styles.navText, activeTab === tab.name && styles.navTextActive]}>{tab.name}</Text>
+                                <Text style={[styles.navText, { color: activeTab === tab.name ? colors.navActive : colors.navText }, activeTab === tab.name && { fontWeight: '700' }]}>{tab.name}</Text>
                             </TouchableOpacity>
                         );
                     })}
@@ -370,16 +376,20 @@ export default function FirstHomePage() {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
-                                <View style={[styles.navIcon, activeTab === tab.name && styles.navIconActive]}>
-                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? '#004F7F' : '#6B7280'} />
+                                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
+                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? colors.navActive : colors.navText} />
                                 </View>
-                                <Text style={[styles.navText, activeTab === tab.name && styles.navTextActive]}>{tab.name}</Text>
+                                <Text style={[styles.navText, { color: activeTab === tab.name ? colors.navActive : colors.navText }, activeTab === tab.name && { fontWeight: '700' }]}>{tab.name}</Text>
                             </TouchableOpacity>
                         );
                     })}
                 </View>
-                <TouchableOpacity style={[styles.cameraButton, activeTab === 'Camera' && styles.cameraButtonActive]} onPress={() => handleTabPress('Camera')} activeOpacity={0.85}>
-                    <Ionicons name="camera-outline" size={30} color={activeTab === 'Camera' ? '#004F7F' : '#6B7280'} />
+                <TouchableOpacity
+                    style={[styles.cameraButton, { backgroundColor: colors.navBg, borderColor: isDark ? '#374151' : '#C5E3ED' }, activeTab === 'Camera' && { borderColor: colors.navActive, backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8' }]}
+                    onPress={() => handleTabPress('Camera')}
+                    activeOpacity={0.85}
+                >
+                    <Ionicons name="camera-outline" size={30} color={activeTab === 'Camera' ? colors.navActive : colors.navText} />
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -387,41 +397,38 @@ export default function FirstHomePage() {
 }
 
 const styles = StyleSheet.create({
-    container:           { flex: 1, backgroundColor: '#D8E9F0' },
+    container:           { flex: 1 },
     titleContainer:      { padding: 20, marginTop: 16 },
-    title:               { fontSize: 20, textAlign: 'center', color: '#1F2937' },
+    title:               { fontSize: 20, textAlign: 'center' },
     titleBold:           { fontWeight: '700' },
     bodyMainContainer:   { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, marginBottom: 200 },
     bodyTouchable:       { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
-    bodyImageWrapper:    { position: 'relative', width: width * 0.85, height: height * 0.55, alignItems: 'center', justifyContent: 'center', backgroundColor: '#D8E9F0', overflow: 'visible' },
-    bodyImage:           { width: '100%', height: '100%', backgroundColor: '#D8E9F0' },
+    bodyImageWrapper:    { position: 'relative', width: width * 0.85, height: height * 0.55, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
+    bodyImage:           { width: '100%', height: '100%' },
     moleContainer:       { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 4 },
     moleInner:           { width: 28, height: 28, borderRadius: 14, backgroundColor: '#004F7F', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFFFFF' },
     moleIcon:            { color: '#FFFFFF', fontSize: 18, fontWeight: '700', lineHeight: 22 },
     moleThumbnail:       { width: 38, height: 38, borderRadius: 8, borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: '#ccc' },
     bottomControls:      { position: 'absolute', bottom: 100, left: 0, right: 0, alignItems: 'center', marginBottom: 35 },
-    toggleWrapper:       { flexDirection: 'row', backgroundColor: '#B8D4DE', borderRadius: 25, padding: 4, width: width * 0.45 },
+    toggleWrapper:       { flexDirection: 'row', borderRadius: 25, padding: 4, width: width * 0.45 },
     toggleButton:        { flex: 1, paddingVertical: 8, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
     toggleButtonActive:  { backgroundColor: '#004F7F' },
-    toggleText:          { fontSize: 14, fontWeight: '600', color: '#6B7280' },
-    toggleTextActive:    { color: '#FFFFFF', fontWeight: '700' },
+    toggleText:          { fontSize: 14, fontWeight: '600' },
     bottomNavContainer:  { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center' },
-    bottomNav:           { flexDirection: 'row', backgroundColor: '#FFFFFF', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#E5E7EB', width: '100%', paddingBottom: 16 },
+    bottomNav:           { flexDirection: 'row', paddingVertical: 10, borderTopWidth: 1, width: '100%', paddingBottom: 16 ,borderTopLeftRadius:20,borderTopRightRadius:20},
     navCenterSpacer:     { flex: 1 },
     navItem:             { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    navIcon:             { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F9FAFB', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-    navIconActive:       { backgroundColor: '#E8F4F8', borderWidth: 2, borderColor: '#C5E3ED' },
-    navText:             { fontSize: 11, color: '#6B7280', fontWeight: '500' },
-    navTextActive:       { fontSize: 11, color: '#004F7F', fontWeight: '700' },
-    cameraButton:        { position: 'absolute', top: -26, alignSelf: 'center', width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#C5E3ED', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 6 },
-    cameraButtonActive:  { borderColor: '#004F7F', backgroundColor: '#E8F4F8' },
-    headerCard:          { backgroundColor: '#FFFFFF', marginHorizontal: 16, marginTop: 12, marginBottom: 8, borderRadius: 20, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
+    navIcon:             { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+    navText:             { fontSize: 11, fontWeight: '500' },
+    cameraButton:        { position: 'absolute', top: -26, alignSelf: 'center', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 6 },
+    headerCard:          { marginHorizontal: 16, marginTop: 12, marginBottom: 8, borderRadius: 20, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
     headerContent:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    profileIconContainer: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#E8F4F8', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#C5E3ED', overflow: 'hidden' },
+    profileIconContainer:{ width: 52, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', borderWidth: 2, overflow: 'hidden' },
     profilePhoto:        { width: 52, height: 52, borderRadius: 26 },
-    welcomeContainer:    { flex: 1, marginLeft: 12, flexDirection: 'row', alignItems: 'center' },
-    welcomeLabel:        { fontSize: 18, color: '#00A3A3', fontStyle: 'italic' },
-    notificationButton:  { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F9FAFB', justifyContent: 'center', alignItems: 'center' },
+    welcomeContainer:    { flex: 1, marginLeft: 12, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+    welcomeLabel:        { fontSize: 18, fontStyle: 'italic' },
+    userName:            { fontWeight: 'bold', marginLeft: 4, marginTop: 3, fontSize: 17 },
+    notificationButton:  { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
     notifBadge:          { position: 'absolute', top: 4, right: 4, backgroundColor: '#EF4444', borderRadius: 9, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1.5, borderColor: '#FFFFFF' },
     notifBadgeText:      { color: '#FFFFFF', fontSize: 10, fontWeight: '800', lineHeight: 13 },
 });

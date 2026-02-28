@@ -2,16 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-  LayoutAnimation,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  UIManager,
-  View,
+  LayoutAnimation, Platform, SafeAreaView, ScrollView,
+  StatusBar, StyleSheet, Text, TouchableOpacity, UIManager, View,
 } from 'react-native';
+import { useTheme } from '../ThemeContext';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental &&
@@ -19,106 +13,20 @@ if (Platform.OS === 'android') {
 }
 
 const faqs = [
-  {
-    question: "I can't log in or \"Sign In\" fails — what to do?",
-    answers: [
-      'Double-check your email and password.',
-      'Ensure you have Internet access.',
-      'If you forgot your password, use the reset option.',
-      'If it still fails, contact support.',
-    ],
-  },
-  {
-    question: 'How do I create an account?',
-    answers: [
-      'Download the app and open it.',
-      'Tap "Sign Up" on the welcome screen.',
-      'Enter your name, email, and a strong password.',
-      'Verify your email address via the link sent to you.',
-      'Complete your profile and start using the app.',
-    ],
-  },
-  {
-    question: 'I forgot my password. How can I reset it?',
-    answers: [
-      'Tap "Forgot Password?" on the login screen.',
-      'Enter your registered email address.',
-      'Check your inbox for a password reset link.',
-      'Follow the link and set a new password.',
-      'If the email doesn\'t arrive, check your spam folder.',
-    ],
-  },
-  {
-    question: 'Why do I need to allow permissions (camera / storage / notifications)?',
-    answers: [
-      'Camera permission is required to capture skin images for diagnosis.',
-      'Storage permission lets you upload images from your gallery.',
-      'Notification permission sends you appointment and follow-up reminders.',
-      'All permissions are used solely within the app and not shared.',
-    ],
-  },
-  {
-    question: 'I want to delete my account / data. How do I do that?',
-    answers: [
-      'Go to Settings from the main menu.',
-      'Scroll down and tap "Delete Account".',
-      'Confirm your identity by entering your password.',
-      'Your account and all associated data will be permanently deleted.',
-      'This action cannot be undone.',
-    ],
-  },
-  {
-    question: "I didn't receive the verification email / SMS?",
-    answers: [
-      'Check your spam or junk mail folder.',
-      'Make sure you entered the correct email/phone number.',
-      'Tap "Resend Verification" on the confirmation screen.',
-      'Wait a few minutes and try again.',
-      'If the issue persists, contact our support team.',
-    ],
-  },
-  {
-    question: 'The app crashes / freezes at login screen?',
-    answers: [
-      'Close the app fully and reopen it.',
-      'Make sure your app is updated to the latest version.',
-      'Restart your device.',
-      'Check that your internet connection is stable.',
-      'Reinstall the app if the problem continues.',
-    ],
-  },
-  {
-    question: 'How accurate is the AI skin diagnosis?',
-    answers: [
-      'The AI model is trained on millions of classified skin images.',
-      'It provides results with a confidence percentage for each diagnosis.',
-      'Accuracy can be affected by image quality and lighting.',
-      'Always consult a dermatologist for a final diagnosis.',
-      'The app is a supportive tool, not a medical replacement.',
-    ],
-  },
-  {
-    question: 'Is my medical data safe and private?',
-    answers: [
-      'All data is encrypted and stored on secure servers.',
-      'Your images and results are never sold or shared without consent.',
-      'The app complies with HIPAA and international health data laws.',
-      'You can request full data deletion at any time.',
-    ],
-  },
-  {
-    question: 'How do I consult a doctor through the app?',
-    answers: [
-      'Complete a skin scan to get your initial diagnosis.',
-      'Tap "Consult a Doctor" on the results screen.',
-      'Choose an available dermatologist from the list.',
-      'Share your diagnosis report and describe your symptoms.',
-      'Receive guidance directly through the in-app chat.',
-    ],
-  },
+  { question: "I can't log in or \"Sign In\" fails — what to do?", answers: ['Double-check your email and password.', 'Ensure you have Internet access.', 'If you forgot your password, use the reset option.', 'If it still fails, contact support.'] },
+  { question: 'How do I create an account?', answers: ['Download the app and open it.', 'Tap "Sign Up" on the welcome screen.', 'Enter your name, email, and a strong password.', 'Verify your email address via the link sent to you.', 'Complete your profile and start using the app.'] },
+  { question: 'I forgot my password. How can I reset it?', answers: ['Tap "Forgot Password?" on the login screen.', 'Enter your registered email address.', 'Check your inbox for a password reset link.', 'Follow the link and set a new password.', "If the email doesn't arrive, check your spam folder."] },
+  { question: 'Why do I need to allow permissions (camera / storage / notifications)?', answers: ['Camera permission is required to capture skin images for diagnosis.', 'Storage permission lets you upload images from your gallery.', 'Notification permission sends you appointment and follow-up reminders.', 'All permissions are used solely within the app and not shared.'] },
+  { question: 'I want to delete my account / data. How do I do that?', answers: ['Go to Settings from the main menu.', 'Scroll down and tap "Delete Account".', 'Confirm your identity by entering your password.', 'Your account and all associated data will be permanently deleted.', 'This action cannot be undone.'] },
+  { question: "I didn't receive the verification email / SMS?", answers: ['Check your spam or junk mail folder.', 'Make sure you entered the correct email/phone number.', 'Tap "Resend Verification" on the confirmation screen.', 'Wait a few minutes and try again.', 'If the issue persists, contact our support team.'] },
+  { question: 'The app crashes / freezes at login screen?', answers: ['Close the app fully and reopen it.', 'Make sure your app is updated to the latest version.', 'Restart your device.', 'Check that your internet connection is stable.', 'Reinstall the app if the problem continues.'] },
+  { question: 'How accurate is the AI skin diagnosis?', answers: ['The AI model is trained on millions of classified skin images.', 'It provides results with a confidence percentage for each diagnosis.', 'Accuracy can be affected by image quality and lighting.', 'Always consult a dermatologist for a final diagnosis.', 'The app is a supportive tool, not a medical replacement.'] },
+  { question: 'Is my medical data safe and private?', answers: ['All data is encrypted and stored on secure servers.', 'Your images and results are never sold or shared without consent.', 'The app complies with HIPAA and international health data laws.', 'You can request full data deletion at any time.'] },
+  { question: 'How do I consult a doctor through the app?', answers: ['Complete a skin scan to get your initial diagnosis.', 'Tap "Consult a Doctor" on the results screen.', 'Choose an available dermatologist from the list.', 'Share your diagnosis report and describe your symptoms.', 'Receive guidance directly through the in-app chat.'] },
 ];
 
 export default function HelpPage() {
+  const { colors, isDark } = useTheme();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   const toggle = (index: number) => {
@@ -126,53 +34,41 @@ export default function HelpPage() {
     setOpenIndex(openIndex === index ? null : index);
   };
 
+  const accentColor = isDark ? '#4BA3C7' : '#2A7DA0';
+
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color="#1F2937" />
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
+
+      <View style={[styles.header, { backgroundColor: colors.card }]}>
+        <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Help</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Help</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      {/* FAQ List */}
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text style={styles.subtitle}>Frequently Asked Questions</Text>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <Text style={[styles.subtitle, { color: colors.subText }]}>Frequently Asked Questions</Text>
 
         {faqs.map((faq, index) => {
           const isOpen = openIndex === index;
           return (
-            <View key={index} style={[styles.card, isOpen && styles.cardOpen]}>
-              <TouchableOpacity
-                style={styles.questionRow}
-                onPress={() => toggle(index)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.questionText, isOpen && styles.questionTextOpen]}>
-                  {faq.question}
-                </Text>
-                <View style={[styles.arrowWrapper, isOpen && styles.arrowWrapperOpen]}>
-                  <Ionicons
-                    name={isOpen ? 'chevron-down' : 'chevron-forward'}
-                    size={16}
-                    color={isOpen ? '#FFFFFF' : '#2A7DA0'}
-                  />
+            <View key={index} style={[styles.card, { backgroundColor: colors.card }, isOpen && { borderColor: accentColor }]}>
+              <TouchableOpacity style={styles.questionRow} onPress={() => toggle(index)} activeOpacity={0.7}>
+                <Text style={[styles.questionText, { color: isOpen ? accentColor : colors.text }]}>{faq.question}</Text>
+                <View style={[styles.arrowWrapper, { borderColor: accentColor }, isOpen && { backgroundColor: accentColor }]}>
+                  <Ionicons name={isOpen ? 'chevron-down' : 'chevron-forward'} size={16} color={isOpen ? '#FFFFFF' : accentColor} />
                 </View>
               </TouchableOpacity>
 
               {isOpen && (
                 <View style={styles.answersContainer}>
-                  <View style={styles.divider} />
+                  <View style={[styles.divider, { backgroundColor: isDark ? '#2A3F50' : '#E5F0F6' }]} />
                   {faq.answers.map((answer, i) => (
                     <View key={i} style={styles.answerRow}>
-                      <Text style={styles.bullet}>→</Text>
-                      <Text style={styles.answerText}>{answer}</Text>
+                      <Text style={[styles.bullet, { color: accentColor }]}>→</Text>
+                      <Text style={[styles.answerText, { color: colors.subText }]}>{answer}</Text>
                     </View>
                   ))}
                 </View>
@@ -188,138 +84,20 @@ export default function HelpPage() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#D8E9F0',
-  },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-    margin: 15,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#1F2937',
-  },
-
-  // Scroll
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 15,
-    paddingBottom: 20,
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#6B7280',
-    marginBottom: 12,
-    marginTop: 2,
-    marginLeft: 2,
-  },
-
-  // FAQ Card
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  cardOpen: {
-    borderColor: '#A8D4E6',
-  },
-
-  // Question row
-  questionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  questionText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1F2937',
-    lineHeight: 20,
-    marginRight: 10,
-  },
-  questionTextOpen: {
-    color: '#2A7DA0',
-    fontWeight: '600',
-  },
-  arrowWrapper: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: '#2A7DA0',
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexShrink: 0,
-  },
-  arrowWrapperOpen: {
-    backgroundColor: '#2A7DA0',
-    borderColor: '#2A7DA0',
-  },
-
-  // Answers
-  answersContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5F0F6',
-    marginBottom: 12,
-  },
-  answerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 7,
-  },
-  bullet: {
-    fontSize: 13,
-    color: '#2A7DA0',
-    marginRight: 8,
-    marginTop: 1,
-    fontWeight: '600',
-  },
-  answerText: {
-    flex: 1,
-    fontSize: 13,
-    color: '#4B5563',
-    lineHeight: 19,
-  },
+  container:     { flex: 1 },
+  header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2, margin: 15 },
+  backButton:    { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  headerTitle:   { fontSize: 22, fontWeight: 'bold' },
+  scrollView:    { flex: 1 },
+  scrollContent: { paddingHorizontal: 15, paddingBottom: 20 },
+  subtitle:      { fontSize: 13, marginBottom: 12, marginTop: 2, marginLeft: 2 },
+  card:          { borderRadius: 14, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 3, elevation: 1, borderWidth: 1, borderColor: 'transparent' },
+  questionRow:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 16 },
+  questionText:  { flex: 1, fontSize: 14, fontWeight: '500', lineHeight: 20, marginRight: 10 },
+  arrowWrapper:  { width: 28, height: 28, borderRadius: 8, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  answersContainer: { paddingHorizontal: 16, paddingBottom: 14 },
+  divider:       { height: 1, marginBottom: 12 },
+  answerRow:     { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 7 },
+  bullet:        { fontSize: 13, marginRight: 8, marginTop: 1, fontWeight: '600' },
+  answerText:    { flex: 1, fontSize: 13, lineHeight: 19 },
 });

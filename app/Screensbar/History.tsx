@@ -1,431 +1,298 @@
-import React, { useState, useCallback } from 'react';
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    ScrollView,
-    Image,
-    ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  Alert,
+  Dimensions,
+  Image,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCustomize } from '../Customize/Customizecontext';
+import { useTheme } from '../ThemeContext';
 
 const MOLES_STORAGE_KEY = 'savedMoles';
+const { width } = Dimensions.get('window');
 
 type Mole = {
-    id: string;
-    x: number;
-    y: number;
-    timestamp: number;
-    photoUri?: string;
-    bodyView: 'front' | 'back';
-    analysis?: string;
-    label?: string; // e.g. "Right leg 1"
+  id: string;
+  x: number;
+  y: number;
+  timestamp: number;
+  photoUri?: string;
+  bodyView: 'front' | 'back';
+  analysis?: string;
 };
 
-function getRelativeTime(timestamp: number): string {
-    const now = Date.now();
-    const diff = now - timestamp;
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (days === 0) return 'Today';
-    if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
-    const weeks = Math.floor(days / 7);
-    if (weeks < 4) return `${weeks} week${weeks > 1 ? 's' : ''} ago`;
-    const months = Math.floor(days / 30);
-    if (months < 12) return `One month ago`;
-    return `${Math.floor(months / 12)} year${Math.floor(months / 12) > 1 ? 's' : ''} ago`;
-}
-
 export default function HistoryPage() {
-    const router = useRouter();
-    const [moles, setMoles] = useState<Mole[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<string>('History');
+  const router = useRouter();
+  const { colors, isDark } = useTheme();
+  const { settings } = useCustomize();
 
-    useFocusEffect(
-        useCallback(() => {
-            setActiveTab('History');
-            loadMoles();
-        }, [])
-    );
+  const customText = {
+    fontSize: settings.fontSize,
+    color: settings.textColor,
+    fontFamily: settings.fontFamily === 'System' ? undefined : settings.fontFamily,
+  };
+  const customBg = { backgroundColor: isDark ? colors.background : settings.backgroundColor };
 
-    const loadMoles = async () => {
-        setLoading(true);
-        try {
-            const saved = await AsyncStorage.getItem(MOLES_STORAGE_KEY);
-            if (saved) {
-                const allMoles: Mole[] = JSON.parse(saved);
-                const withPhotos = allMoles.filter((m) => m.photoUri);
-                // newest first
-                withPhotos.sort((a, b) => b.timestamp - a.timestamp);
-                setMoles(withPhotos);
-            }
-        } catch (err) {
-            console.log('Error loading moles:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const [moles, setMoles]       = useState<Mole[]>([]);
+  const [loading, setLoading]   = useState(true);
+  const [activeTab, setActiveTab] = useState<string>('History');
 
-    const bottomTabs = [
-        { name: 'Home', icon: 'home-outline' },
-        { name: 'Reports', icon: 'document-text-outline' },
-        { name: 'History', icon: 'time-outline' },
-        { name: 'Settings', icon: 'settings-outline' },
-        { name: 'Camera', icon: 'camera-outline' },
-    ];
+  useFocusEffect(
+    React.useCallback(() => {
+      setActiveTab('History');
+      loadMoles();
+    }, [])
+  );
 
-    const handleTabPress = (tabName: string) => {
-        setActiveTab(tabName);
-        switch (tabName) {
-            case 'Home': router.push('/Screensbar/FirstHomePage'); break;
-            case 'Camera': router.push('/Screensbar/Camera'); break;
-            case 'Reports': router.push('/Screensbar/Reports'); break;
-            case 'Settings': router.push('/Screensbar/Setting'); break;
-        }
-    };
+  const loadMoles = async () => {
+    try {
+      const saved = await AsyncStorage.getItem(MOLES_STORAGE_KEY);
+      if (saved) {
+        setMoles(JSON.parse(saved));
+      } else {
+        setMoles([]);
+      }
+    } catch (err) {
+      console.log('Error loading moles:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const getBodyLabel = (mole: Mole, index: number) => {
-        if (mole.label) return mole.label;
-        return mole.bodyView === 'front' ? `Front body ${index + 1}` : `Back body ${index + 1}`;
-    };
+  const deleteMole = async (moleId: string) => {
+    Alert.alert('Delete Entry', 'Are you sure you want to delete this history entry?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          const updated = moles.filter((m) => m.id !== moleId);
+          setMoles(updated);
+          try {
+            await AsyncStorage.setItem(MOLES_STORAGE_KEY, JSON.stringify(updated));
+          } catch (err) {
+            console.log('Error deleting mole:', err);
+          }
+        },
+      },
+    ]);
+  };
 
-    return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity
-                    style={styles.backButton}
-                    onPress={() => router.back()}
-                >
-                    <Ionicons name="chevron-back" size={24} color="#1F2937" />
-                </TouchableOpacity>
-                <View style={styles.headerTitleRow}>
-                    <Text style={styles.headerTitle}>History</Text>
-                </View>
-                <View style={{ width: 40 }} />
-            </View>
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  };
 
-            {/* Content */}
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                {loading ? (
-                    <View style={styles.centered}>
-                        <ActivityIndicator size="large" color="#004F7F" />
-                        <Text style={styles.loadingText}>Loading history...</Text>
+  const bottomTabs = [
+    { name: 'Home',     icon: 'home-outline' },
+    { name: 'Reports',  icon: 'document-text-outline' },
+    { name: 'History',  icon: 'time-outline' },
+    { name: 'Settings', icon: 'settings-outline' },
+    { name: 'Camera',   icon: 'camera-outline' },
+  ];
+
+  const handleTabPress = (tabName: string) => {
+    setActiveTab(tabName);
+    switch (tabName) {
+      case 'Home':     router.push('/Screensbar/FirstHomePage'); break;
+      case 'Camera':   router.push('/Screensbar/Camera');        break;
+      case 'Reports':  router.push('/Screensbar/Reports');       break;
+      case 'Settings': router.push('/Screensbar/Setting');       break;
+    }
+  };
+
+  return (
+    <SafeAreaView style={[styles.container, customBg]} edges={['top']}>
+      <StatusBar barStyle={colors.statusBar} backgroundColor={isDark ? colors.background : settings.backgroundColor} />
+
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.card }]}>
+        <TouchableOpacity
+          style={[styles.backButton, { borderColor: colors.border }]}
+          onPress={() => router.back()}
+        >
+          <Ionicons name="chevron-back" size={24} color={colors.text} />
+        </TouchableOpacity>
+        <View style={styles.headerTitleRow}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>History</Text>
+        </View>
+        <View style={{ width: 40 }} />
+      </View>
+
+      {/* Content */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {loading ? (
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyTitle, customText]}>Loading...</Text>
+          </View>
+        ) : moles.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="time-outline" size={80} color={isDark ? '#374151' : '#C5E3ED'} />
+            <Text style={[styles.emptyTitle, customText]}>No History Yet</Text>
+            <Text style={[styles.emptyText, customText, { color: colors.subText }]}>
+              Your scanned skin areas will appear here
+            </Text>
+          </View>
+        ) : (
+          <>
+            <Text style={[styles.countLabel, customText, { color: colors.subText }]}>
+              {moles.length} {moles.length === 1 ? 'entry' : 'entries'} found
+            </Text>
+            {[...moles].reverse().map((mole, index) => (
+              <View key={mole.id} style={[styles.card, { backgroundColor: colors.card }]}>
+                <View style={styles.cardRow}>
+                  {/* Thumbnail */}
+                  {mole.photoUri ? (
+                    <TouchableOpacity
+                      onPress={() => router.push({
+                        pathname: '/Screensbar/Camera',
+                        params: {
+                          tapX: mole.x.toFixed(2), tapY: mole.y.toFixed(2),
+                          bodyView: mole.bodyView, moleId: mole.id,
+                          existingPhotoUri: mole.photoUri || '',
+                        },
+                      })}
+                      activeOpacity={0.85}
+                    >
+                      <Image source={{ uri: mole.photoUri }} style={styles.thumbnail} resizeMode="cover" />
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={[styles.thumbnailPlaceholder, { backgroundColor: isDark ? '#2A3F50' : '#E8F4F8' }]}>
+                      <Ionicons name="scan-outline" size={28} color={colors.primary} />
                     </View>
-                ) : moles.length === 0 ? (
-                    <View style={styles.centered}>
-                        <Ionicons name="time-outline" size={80} color="#C5E3ED" />
-                        <Text style={styles.emptyTitle}>No History Yet</Text>
-                        <Text style={styles.emptyText}>
-                            Take photos of skin areas to track your history
+                  )}
+
+                  {/* Info */}
+                  <View style={styles.cardInfo}>
+                    <Text style={[styles.cardTitle, customText, { color: colors.text }]}>
+                      Entry #{moles.length - index}
+                    </Text>
+                    <Text style={[styles.cardDate, { color: colors.subText, fontSize: Math.max(11, settings.fontSize - 4) }]}>
+                      {formatDate(mole.timestamp)}
+                    </Text>
+                    <View style={styles.badgeRow}>
+                      <View style={[styles.badge, { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8' }]}>
+                        <Ionicons name="body-outline" size={12} color={colors.primary} />
+                        <Text style={[styles.badgeText, { color: colors.primary, fontSize: Math.max(11, settings.fontSize - 4) }]}>
+                          {mole.bodyView === 'front' ? 'Front' : 'Back'}
                         </Text>
+                      </View>
+                      {mole.analysis && (
+                        <View style={[styles.badge, { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8' }]}>
+                          <Ionicons name="checkmark-circle-outline" size={12} color="#10B981" />
+                          <Text style={[styles.badgeText, { color: '#10B981', fontSize: Math.max(11, settings.fontSize - 4) }]}>
+                            Analyzed
+                          </Text>
+                        </View>
+                      )}
                     </View>
-                ) : (
-                    moles.map((mole, index) => (
-                        <TouchableOpacity
-                            key={mole.id}
-                            style={styles.historyItem}
-                            activeOpacity={0.75}
-                            onPress={() =>
-                                router.push({
-                                    pathname: "/Screensbar/Reportdetails",
-                                    params: {
-                                        moleId: mole.id,
-                                        photoUri: mole.photoUri,
-                                        timestamp: mole.timestamp.toString(),
-                                        bodyView: mole.bodyView,
-                                        x: mole.x.toString(),
-                                        y: mole.y.toString(),
-                                        analysis: mole.analysis || '',
-                                        reportIndex: index.toString(),
-                                    },
-                                })
-                            }
-                        >
-                            {/* Thumbnail */}
-                            <View style={styles.thumbnailWrapper}>
-                                <Image
-                                    source={{ uri: mole.photoUri }}
-                                    style={styles.thumbnail}
-                                    resizeMode="cover"
-                                />
-                            </View>
+                  </View>
 
-                            {/* Info */}
-                            <View style={styles.infoBlock}>
-                                <Text style={styles.itemTitle}>{getBodyLabel(mole, index)}</Text>
-                                <Text style={styles.itemSub}>
-                                    {mole.analysis
-                                        ? mole.analysis.length > 40
-                                            ? mole.analysis.slice(0, 40) + '…'
-                                            : mole.analysis
-                                        : 'No complaints'}
-                                </Text>
-                            </View>
-
-                            {/* Date */}
-                            <Text style={styles.itemDate}>{getRelativeTime(mole.timestamp)}</Text>
-                        </TouchableOpacity>
-                    ))
-                )}
-            </ScrollView>
-
-            {/* Bottom Navigation */}
-            <View style={styles.bottomNavContainer}>
-                <View style={styles.bottomNav}>
-                    {['Home', 'Reports'].map((tabName) => {
-                        const tab = bottomTabs.find((t) => t.name === tabName)!;
-                        return (
-                            <TouchableOpacity
-                                key={tab.name}
-                                style={styles.navItem}
-                                onPress={() => handleTabPress(tab.name)}
-                            >
-                                <View style={[styles.navIcon, activeTab === tab.name && styles.navIconActive]}>
-                                    <Ionicons
-                                        name={tab.icon as any}
-                                        size={26}
-                                        color={activeTab === tab.name ? '#004F7F' : '#6B7280'}
-                                    />
-                                </View>
-                                <Text style={[styles.navText, activeTab === tab.name && styles.navTextActive]}>
-                                    {tab.name}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
-                    <View style={styles.navCenterSpacer} />
-                    {['History', 'Settings'].map((tabName) => {
-                        const tab = bottomTabs.find((t) => t.name === tabName)!;
-                        return (
-                            <TouchableOpacity
-                                key={tab.name}
-                                style={styles.navItem}
-                                onPress={() => handleTabPress(tab.name)}
-                            >
-                                <View style={[styles.navIcon, activeTab === tab.name && styles.navIconActive]}>
-                                    <Ionicons
-                                        name={tab.icon as any}
-                                        size={26}
-                                        color={activeTab === tab.name ? '#004F7F' : '#6B7280'}
-                                    />
-                                </View>
-                                <Text style={[styles.navText, activeTab === tab.name && styles.navTextActive]}>
-                                    {tab.name}
-                                </Text>
-                            </TouchableOpacity>
-                        );
-                    })}
+                  {/* Delete Button */}
+                  <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => deleteMole(mole.id)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                  </TouchableOpacity>
                 </View>
 
-                {/* Camera center button */}
-                <TouchableOpacity
-                    style={[styles.cameraButton, activeTab === 'Camera' && styles.cameraButtonActive]}
-                    onPress={() => handleTabPress('Camera')}
-                    activeOpacity={0.85}
-                >
-                    <Ionicons
-                        name="camera-outline"
-                        size={30}
-                        color={activeTab === 'Camera' ? '#004F7F' : '#6B7280'}
-                    />
-                </TouchableOpacity>
-            </View>
-        </SafeAreaView>
-    );
+                {mole.analysis && (
+                  <View style={[styles.analysisBox, { backgroundColor: isDark ? '#1A2F3F' : '#F4FBFF' }]}>
+                    <Text style={[styles.analysisText, customText, { color: colors.subText }]} numberOfLines={3}>
+                      {mole.analysis}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            ))}
+          </>
+        )}
+      </ScrollView>
+
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNavContainer}>
+        <View style={[styles.bottomNav, { backgroundColor: colors.navBg, borderTopColor: colors.border }]}>
+          {['Home', 'Reports'].map((tabName) => {
+            const tab = bottomTabs.find(t => t.name === tabName)!;
+            return (
+              <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
+                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
+                  <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? colors.navActive : colors.navText} />
+                </View>
+                <Text style={[styles.navText, { color: activeTab === tab.name ? colors.navActive : colors.navText }, activeTab === tab.name && { fontWeight: '700' }]}>{tab.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
+          <View style={styles.navCenterSpacer} />
+          {['History', 'Settings'].map((tabName) => {
+            const tab = bottomTabs.find(t => t.name === tabName)!;
+            return (
+              <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
+                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
+                  <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? colors.navActive : colors.navText} />
+                </View>
+                <Text style={[styles.navText, { color: activeTab === tab.name ? colors.navActive : colors.navText }, activeTab === tab.name && { fontWeight: '700' }]}>{tab.name}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        <TouchableOpacity
+          style={[styles.cameraButton, { backgroundColor: colors.navBg, borderColor: isDark ? '#374151' : '#C5E3ED' }, activeTab === 'Camera' && { borderColor: colors.navActive, backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8' }]}
+          onPress={() => handleTabPress('Camera')}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="camera-outline" size={30} color={activeTab === 'Camera' ? colors.navActive : colors.navText} />
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#D8E9F0',
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        backgroundColor: '#FFFFFF',
-borderRadius:15,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-      elevation: 2,
-        margin:15,
-    },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    headerTitleRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#1F2937',
-    },
-    scrollView: { flex: 1 },
-    scrollContent: {
-        padding: 16,
-        paddingBottom: 110,
-    },
-    centered: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: 80,
-    },
-    loadingText: {
-        marginTop: 12,
-        fontSize: 16,
-        color: '#6B7280',
-    },
-    emptyTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#1F2937',
-        marginTop: 16,
-    },
-    emptyText: {
-        fontSize: 14,
-        color: '#6B7280',
-        marginTop: 8,
-        textAlign: 'center',
-        paddingHorizontal: 40,
-    },
-
-    /* History item */
-    historyItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        marginBottom: 12,
-        padding: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.06,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    thumbnailWrapper: {
-        width: 58,
-        height: 58,
-        borderRadius: 29,
-        overflow: 'hidden',
-        backgroundColor: '#E5E7EB',
-        borderWidth: 2,
-        borderColor: '#C5E3ED',
-    },
-    thumbnail: {
-        width: '100%',
-        height: '100%',
-    },
-    infoBlock: {
-        flex: 1,
-        marginLeft: 14,
-    },
-    itemTitle: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#1F2937',
-        marginBottom: 4,
-    },
-    itemSub: {
-        fontSize: 13,
-        color: '#6B7280',
-    },
-    itemDate: {
-        fontSize: 12,
-        color: '#9CA3AF',
-        marginLeft: 8,
-        textAlign: 'right',
-    },
-
-    /* Bottom nav */
-    bottomNavContainer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        alignItems: 'center',
-    },
-    bottomNav: {
-        flexDirection: 'row',
-        backgroundColor: '#FFFFFF',
-        paddingVertical: 10,
-        borderTopWidth: 1,
-        borderTopColor: '#E5E7EB',
-        width: '100%',
-        paddingBottom: 16,
-    },
-    navCenterSpacer: { flex: 1 },
-    navItem: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    navIcon: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
-        backgroundColor: '#F9FAFB',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 4,
-    },
-    navIconActive: {
-        backgroundColor: '#E8F4F8',
-        borderWidth: 2,
-        borderColor: '#C5E3ED',
-    },
-    navText: {
-        fontSize: 11,
-        color: '#6B7280',
-        fontWeight: '500',
-    },
-    navTextActive: {
-        fontSize: 11,
-        color: '#004F7F',
-        fontWeight: '700',
-    },
-    cameraButton: {
-        position: 'absolute',
-        top: -26,
-        alignSelf: 'center',
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#FFFFFF',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 3,
-        borderColor: '#C5E3ED',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12,
-        shadowRadius: 6,
-        elevation: 6,
-    },
-    cameraButtonActive: {
-        borderColor: '#004F7F',
-        backgroundColor: '#E8F4F8',
-    },
+  container:           { flex: 1 },
+  header:              { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2, margin: 15 },
+  backButton:          { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  headerTitleRow:      { flexDirection: 'row', alignItems: 'center' },
+  headerTitle:         { fontSize: 22, fontWeight: 'bold'},
+  scrollView:          { flex: 1 },
+  scrollContent:       { padding: 16, paddingBottom: 110 },
+  countLabel:          { fontSize: 13, fontWeight: '600', marginBottom: 12, marginLeft: 4 },
+  emptyContainer:      { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
+  emptyTitle:          { fontSize: 20, fontWeight: '700', marginTop: 16 },
+  emptyText:           { fontSize: 14, marginTop: 8, textAlign: 'center', paddingHorizontal: 40 },
+  card:                { borderRadius: 16, marginBottom: 12, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
+  cardRow:             { flexDirection: 'row', alignItems: 'center', padding: 12, gap: 12 },
+  thumbnail:           { width: 72, height: 72, borderRadius: 12 },
+  thumbnailPlaceholder:{ width: 72, height: 72, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  cardInfo:            { flex: 1 },
+  cardTitle:           { fontWeight: '700', marginBottom: 4 },
+  cardDate:            { marginBottom: 6 },
+  badgeRow:            { flexDirection: 'row', gap: 6 },
+  badge:               { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  badgeText:           { fontWeight: '600' },
+  deleteButton:        { padding: 8 },
+  analysisBox:         { paddingHorizontal: 12, paddingBottom: 12 },
+  analysisText:        { lineHeight: 20 },
+  bottomNavContainer:  { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center' },
+  bottomNav:           { flexDirection: 'row', paddingVertical: 10, borderTopWidth: 1, width: '100%', paddingBottom: 16 ,borderTopLeftRadius:20,borderTopRightRadius:20},
+  navCenterSpacer:     { flex: 1 },
+  navItem:             { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  navIcon:             { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+  navText:             { fontSize: 11, fontWeight: '500' },
+  cameraButton:        { position: 'absolute', top: -26, alignSelf: 'center', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 6 },
 });
