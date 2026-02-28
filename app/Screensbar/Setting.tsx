@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth } from "../../Firebase/firebaseConfig";
-import { useCustomize } from '../Customize/Customizecontext';
 import { NOTIFICATIONS_ENABLED_KEY } from '../Screensbar/notificationsData';
 import { useTheme } from "../ThemeContext";
 
@@ -26,15 +25,6 @@ const STORAGE_KEY = 'signupDraft';
 export default function SettingsPage() {
     const router = useRouter();
     const { isDark, toggleTheme, colors } = useTheme();
-    const { settings } = useCustomize();
-
-    const customText = {
-        fontSize:   settings.fontSize,
-        color:      settings.textColor,
-        fontFamily: settings.fontFamily === 'System' ? undefined : settings.fontFamily,
-    };
-    const customBg = { backgroundColor: isDark ? colors.background : settings.backgroundColor };
-
     const [activeTab, setActiveTab]                       = useState<string>('Settings');
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [logoutModalVisible, setLogoutModalVisible]     = useState(false);
@@ -124,14 +114,14 @@ export default function SettingsPage() {
             <View style={[styles.settingsIconWrap, { backgroundColor: iconColor + '22' }]}>
                 <Ionicons name={icon as any} size={20} color={iconColor} />
             </View>
-            <Text style={[styles.settingsLabel, customText, { color: colors.text }]}>{label}</Text>
+            <Text style={[styles.settingsLabel, { color: colors.text }]}>{label}</Text>
             {rightElement ?? (onPress ? <Ionicons name="chevron-forward" size={18} color={colors.border} /> : null)}
         </TouchableOpacity>
     );
 
     return (
-        <SafeAreaView style={[styles.container, customBg]} edges={['top']}>
-            <StatusBar barStyle={colors.statusBar} backgroundColor={isDark ? colors.background : settings.backgroundColor} />
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+            <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
 
             {/* Logout Modal */}
             <Modal
@@ -145,7 +135,7 @@ export default function SettingsPage() {
                         <View style={styles.modalIconWrap}>
                             <Ionicons name="log-out-outline" size={28} color="#E74C3C" />
                         </View>
-                        <Text style={[styles.modalTitle, customText, { color: colors.text }]}>
+                        <Text style={[styles.modalTitle, { color: colors.text }]}>
                             Are you sure you want to{'\n'}logout from this account?
                         </Text>
                         <Text style={styles.modalEmail}>{profileEmail}</Text>
@@ -166,7 +156,7 @@ export default function SettingsPage() {
                 <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={() => router.back()}>
                     <Ionicons name="chevron-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, customText, { color: colors.text }]}>Settings</Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>Settings</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -189,14 +179,14 @@ export default function SettingsPage() {
                         )}
                     </View>
                     <View style={styles.profileInfo}>
-                        <Text style={[styles.profileName, customText, { color: colors.text, fontWeight: '700' }]}>{profileName || 'No Name'}</Text>
-                        <Text style={[styles.profileEmail, customText, { color: colors.subText, fontSize: Math.max(11, settings.fontSize - 3) }]}>{profileEmail || 'No Email'}</Text>
+                        <Text style={[styles.profileName, { color: colors.text }]}>{profileName || 'No Name'}</Text>
+                        <Text style={[styles.profileEmail, { color: colors.subText }]}>{profileEmail || 'No Email'}</Text>
                     </View>
                     <Ionicons name="chevron-forward" size={20} color={colors.subText} />
                 </TouchableOpacity>
 
                 {/* Preferences Section */}
-                <Text style={[styles.sectionTitle, customText, { color: colors.subText }]}>Preferences</Text>
+                <Text style={[styles.sectionTitle, { color: colors.subText }]}>Preferences</Text>
                 <View style={[styles.card, { backgroundColor: colors.card }]}>
                     <SettingsRow
                         icon="notifications-outline"
@@ -231,7 +221,7 @@ export default function SettingsPage() {
                 </View>
 
                 {/* App Section */}
-                <Text style={[styles.sectionTitle, customText, { color: colors.subText }]}>App</Text>
+                <Text style={[styles.sectionTitle, { color: colors.subText }]}>App</Text>
                 <View style={[styles.card, { backgroundColor: colors.card }]}>
                     <SettingsRow
                         icon="information-circle-outline"
@@ -327,7 +317,7 @@ const styles = StyleSheet.create({
     settingsIconWrap:{ width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 14 },
     settingsLabel:   { flex: 1, fontSize: 15, fontWeight: '500' },
     bottomNavContainer: { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center' },
-    bottomNav:       { flexDirection: 'row', paddingVertical: 10, borderTopWidth: 1, width: '100%', paddingBottom: 16,borderTopLeftRadius:20,borderTopRightRadius:20 },
+    bottomNav:       { flexDirection: 'row', paddingVertical: 10, borderTopWidth: 1, width: '100%', paddingBottom: 16 },
     navCenterSpacer: { flex: 1 },
     navItem:         { flex: 1, alignItems: 'center', justifyContent: 'center' },
     navIcon:         { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },

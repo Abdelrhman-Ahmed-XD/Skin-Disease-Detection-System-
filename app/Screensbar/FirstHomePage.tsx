@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from "../../Firebase/firebaseConfig";
-import { useCustomize } from '../Customize/Customizecontext';
 import {
   NOTIFICATIONS_ENABLED_KEY,
   NOTIFICATIONS_STORAGE_KEY,
@@ -56,16 +55,6 @@ type BodyView = 'front' | 'back';
 export default function FirstHomePage() {
     const router = useRouter();
     const { colors, isDark } = useTheme();
-    const { settings } = useCustomize();
-
-    // ─── Customize styles (applied throughout the screen) ───
-    const customText = {
-        fontSize:   settings.fontSize,
-        color:      settings.textColor,
-        fontFamily: settings.fontFamily === 'System' ? undefined : settings.fontFamily,
-    };
-    const customBg = { backgroundColor: isDark ? colors.background : settings.backgroundColor };
-
     const [userName, setUserName]   = useState('');
     const [photoUri, setPhotoUri]   = useState<string | null>(null);
     const [bodyView, setBodyView]   = useState<BodyView>('front');
@@ -273,8 +262,8 @@ export default function FirstHomePage() {
     };
 
     return (
-        <SafeAreaView style={[styles.container, customBg]} edges={['top']}>
-            <StatusBar barStyle={colors.statusBar} backgroundColor={isDark ? colors.background : settings.backgroundColor} />
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+            <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
 
             {/* Header */}
             <View style={[styles.headerCard, { backgroundColor: colors.card }]}>
@@ -288,8 +277,8 @@ export default function FirstHomePage() {
                     </TouchableOpacity>
 
                     <View style={styles.welcomeContainer}>
-                        <Text style={[styles.welcomeLabel, customText, { color: colors.accent }]}>Welcome,</Text>
-                        <Text style={[styles.userName, customText, { fontWeight: 'bold' }]}>{userName}</Text>
+                        <Text style={[styles.welcomeLabel, { color: colors.accent }]}>Welcome,</Text>
+                        <Text style={[styles.userName, { color: colors.text }]}>{userName}</Text>
                     </View>
 
                     <TouchableOpacity style={[styles.notificationButton, { backgroundColor: isDark ? '#1E2A35' : '#F9FAFB' }]} onPress={() => router.push('/Screensbar/Notifications')}>
@@ -311,18 +300,16 @@ export default function FirstHomePage() {
 
             {/* Title */}
             <View style={styles.titleContainer}>
-                <Text style={[styles.title, customText]}>
-                    Let&apos;s Check your <Text style={[styles.titleBold, customText]}>Skin</Text>
-                </Text>
+                <Text style={[styles.title, { color: colors.text }]}>Let&#39;s Check your <Text style={[styles.titleBold, { color: colors.text }]}>Skin</Text></Text>
             </View>
 
             {/* Body */}
-            <View style={[styles.bodyMainContainer, customBg]}>
+            <View style={[styles.bodyMainContainer, { backgroundColor: colors.background }]}>
                 <View style={styles.bodyTouchable} {...panResponder.panHandlers} ref={(r) => { bodyWrapperRef.current = r; }}>
-                    <Animated.View style={[styles.bodyImageWrapper, customBg, { transform: [{ scale }, { translateX }, { translateY }] }]}>
+                    <Animated.View style={[styles.bodyImageWrapper, { backgroundColor: colors.background, transform: [{ scale }, { translateX }, { translateY }] }]}>
                         <Image
                             source={bodyView === 'front' ? require('../../assets/images/body-front.png') : require('../../assets/images/body-back.png')}
-                            style={[styles.bodyImage, customBg]}
+                            style={[styles.bodyImage, { backgroundColor: colors.background }]}
                             resizeMode="contain"
                         />
                         {currentMoles.map((mole) => {
@@ -349,10 +336,10 @@ export default function FirstHomePage() {
             <View style={styles.bottomControls}>
                 <View style={[styles.toggleWrapper, { backgroundColor: isDark ? '#1E2A35' : '#B8D4DE' }]}>
                     <TouchableOpacity onPress={() => toggleBodyView('front')} style={[styles.toggleButton, bodyView === 'front' && styles.toggleButtonActive]}>
-                        <Text style={[styles.toggleText, customText, { color: bodyView === 'front' ? '#FFFFFF' : colors.subText }]}>Front</Text>
+                        <Text style={[styles.toggleText, { color: bodyView === 'front' ? '#FFFFFF' : colors.subText }]}>Front</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => toggleBodyView('back')} style={[styles.toggleButton, bodyView === 'back' && styles.toggleButtonActive]}>
-                        <Text style={[styles.toggleText, customText, { color: bodyView === 'back' ? '#FFFFFF' : colors.subText }]}>Back</Text>
+                        <Text style={[styles.toggleText, { color: bodyView === 'back' ? '#FFFFFF' : colors.subText }]}>Back</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -415,7 +402,7 @@ const styles = StyleSheet.create({
     toggleButtonActive:  { backgroundColor: '#004F7F' },
     toggleText:          { fontSize: 14, fontWeight: '600' },
     bottomNavContainer:  { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center' },
-    bottomNav:           { flexDirection: 'row', paddingVertical: 10, borderTopWidth: 1, width: '100%', paddingBottom: 16 ,borderTopLeftRadius:20,borderTopRightRadius:20},
+    bottomNav:           { flexDirection: 'row', paddingVertical: 10, borderTopWidth: 1, width: '100%', paddingBottom: 16 },
     navCenterSpacer:     { flex: 1 },
     navItem:             { flex: 1, alignItems: 'center', justifyContent: 'center' },
     navIcon:             { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },

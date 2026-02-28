@@ -17,7 +17,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useCustomize } from '../Customize/Customizecontext';
 import { useTheme } from '../ThemeContext';
 
 const MOLES_STORAGE_KEY = 'savedMoles';
@@ -31,15 +30,6 @@ type Mole = {
 export default function ReportsPage() {
     const router = useRouter();
     const { colors, isDark } = useTheme();
-    const { settings } = useCustomize();
-
-    const customText = {
-        fontSize:   settings.fontSize,
-        color:      settings.textColor,
-        fontFamily: settings.fontFamily === 'System' ? undefined : settings.fontFamily,
-    };
-    const customBg = { backgroundColor: isDark ? colors.background : settings.backgroundColor };
-
     const [moles, setMoles]               = useState<Mole[]>([]);
     const [loading, setLoading]           = useState(true);
     const [downloadingAll, setDownloadingAll] = useState(false);
@@ -124,14 +114,14 @@ export default function ReportsPage() {
     };
 
     return (
-        <SafeAreaView style={[styles.container, customBg]} edges={['top']}>
-            <StatusBar barStyle={colors.statusBar} backgroundColor={isDark ? colors.background : settings.backgroundColor} />
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+            <StatusBar barStyle={colors.statusBar} backgroundColor={colors.background} />
 
             <View style={[styles.header, { backgroundColor: colors.card }]}>
                 <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={() => router.back()}>
                     <Ionicons name="chevron-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={[styles.headerTitle, customText, { color: colors.text }]}>Reports</Text>
+                <Text style={[styles.headerTitle, { color: colors.text }]}>Reports</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -139,13 +129,13 @@ export default function ReportsPage() {
                 {loading ? (
                     <View style={styles.loadingContainer}>
                         <ActivityIndicator size="large" color={colors.primary} />
-                        <Text style={[styles.loadingText, customText, { color: colors.subText }]}>Loading reports...</Text>
+                        <Text style={[styles.loadingText, { color: colors.subText }]}>Loading reports...</Text>
                     </View>
                 ) : moles.length === 0 ? (
                     <View style={styles.emptyContainer}>
                         <Ionicons name="document-text-outline" size={80} color={isDark ? '#374151' : '#C5E3ED'} />
-                        <Text style={[styles.emptyTitle, customText]}>No Reports Yet</Text>
-                        <Text style={[styles.emptyText, customText, { color: colors.subText }]}>Take photos of skin areas to generate reports</Text>
+                        <Text style={[styles.emptyTitle, { color: colors.text }]}>No Reports Yet</Text>
+                        <Text style={[styles.emptyText, { color: colors.subText }]}>Take photos of skin areas to generate reports</Text>
                     </View>
                 ) : (
                     <>
@@ -167,10 +157,10 @@ export default function ReportsPage() {
 
                                 <View style={styles.reportContent}>
                                     <View style={styles.reportHeader}>
-                                        <Text style={[styles.reportTitle, customText, { color: colors.text }]}>Report #{index + 1}</Text>
-                                        <Text style={[styles.reportDate, customText, { color: colors.subText, fontSize: Math.max(11, settings.fontSize - 3) }]}>{formatDate(mole.timestamp)}</Text>
+                                        <Text style={[styles.reportTitle, { color: colors.text }]}>Report #{index + 1}</Text>
+                                        <Text style={[styles.reportDate, { color: colors.subText }]}>{formatDate(mole.timestamp)}</Text>
                                     </View>
-                                    <Text style={[styles.reportText, customText, { color: colors.subText }]}>
+                                    <Text style={[styles.reportText, { color: colors.subText }]}>
                                         {mole.analysis || 'Analysis in progress. The AI system is evaluating the skin area.'}
                                     </Text>
                                     <TouchableOpacity
@@ -246,7 +236,7 @@ const styles = StyleSheet.create({
     container:         { flex: 1 },
     header:            { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 15, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2, margin: 15 },
     backButton:        { width: 40, height: 40, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-    headerTitle:       { fontSize:22, fontWeight: 'bold' },
+    headerTitle:       { fontSize: 20, fontWeight: 'bold' },
     scrollView:        { flex: 1 },
     scrollContent:     { padding: 16, paddingBottom: 100 },
     loadingContainer:  { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 100 },
@@ -267,10 +257,10 @@ const styles = StyleSheet.create({
     reportText:        { fontSize: 14, lineHeight: 20, marginBottom: 16 },
     downloadButton:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, alignSelf: 'flex-end' },
     downloadButtonText:{ fontSize: 14, fontWeight: '600', marginLeft: 6 },
-    downloadAllButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 16, marginTop: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 4,marginBottom:25 },
+    downloadAllButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 16, marginTop: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 4 },
     downloadAllText:   { fontSize: 16, fontWeight: '700', color: '#FFFFFF', marginLeft: 8 },
     bottomNavContainer:{ position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center' },
-    bottomNav:         { flexDirection: 'row', paddingVertical: 10, borderTopWidth: 1, width: '100%', paddingBottom: 16,borderTopLeftRadius:20,borderTopRightRadius:20 },
+    bottomNav:         { flexDirection: 'row', paddingVertical: 10, borderTopWidth: 1, width: '100%', paddingBottom: 16 },
     navCenterSpacer:   { flex: 1 },
     navItem:           { flex: 1, alignItems: 'center', justifyContent: 'center' },
     navIcon:           { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
