@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -16,24 +16,8 @@ const STORAGE_KEY = "signupDraft";
 export default function GenderScreen() {
   const [gender, setGender] = useState<"male" | "female" | null>(null);
 
-  // ── Load saved gender ─────────────────────────────────────
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const saved = await AsyncStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const data = JSON.parse(saved);
-          if (data.gender) setGender(data.gender);
-        }
-      } catch (err) {
-        console.log("Gender load error:", err);
-      }
-    };
-    load();
-  }, []);
-
-  // ── Save gender ───────────────────────────────────────────
-  const saveGender = async (value: "male" | "female") => {
+  const handleSelect = async (value: "male" | "female") => {
+    setGender(value);
     try {
       const saved = await AsyncStorage.getItem(STORAGE_KEY);
       const data = saved ? JSON.parse(saved) : {};
@@ -44,11 +28,6 @@ export default function GenderScreen() {
     } catch (err) {
       console.log("Gender save error:", err);
     }
-  };
-
-  const handleSelect = (value: "male" | "female") => {
-    setGender(value);
-    saveGender(value);
   };
 
   return (
@@ -89,23 +68,13 @@ export default function GenderScreen() {
             onPress={() => handleSelect("male")}
             style={[
               styles.card,
-              styles.maleCard,
-              gender && gender !== "male" && styles.inactiveCard,
+              gender === null || gender === "male"
+                ? styles.maleCard
+                : styles.inactiveCard,
             ]}
           >
-            <Ionicons
-              name="male"
-              size={26}
-              color={gender && gender !== "male" ? "#aaa" : "#fff"}
-            />
-            <Text
-              style={[
-                styles.cardText,
-                gender && gender !== "male" && styles.inactiveText,
-              ]}
-            >
-              Male
-            </Text>
+            <Ionicons name="male" size={26} color="#fff" />
+            <Text style={styles.cardText}>Male</Text>
           </TouchableOpacity>
 
           {/* FEMALE */}
@@ -113,23 +82,13 @@ export default function GenderScreen() {
             onPress={() => handleSelect("female")}
             style={[
               styles.card,
-              styles.femaleCard,
-              gender && gender !== "female" && styles.inactiveCard,
+              gender === null || gender === "female"
+                ? styles.femaleCard
+                : styles.inactiveCard,
             ]}
           >
-            <Ionicons
-              name="female"
-              size={26}
-              color={gender && gender !== "female" ? "#aaa" : "#fff"}
-            />
-            <Text
-              style={[
-                styles.cardText,
-                gender && gender !== "female" && styles.inactiveText,
-              ]}
-            >
-              Female
-            </Text>
+            <Ionicons name="female" size={26} color="#fff" />
+            <Text style={styles.cardText}>Female</Text>
           </TouchableOpacity>
         </View>
 
@@ -199,9 +158,8 @@ const styles = StyleSheet.create({
   },
   maleCard: { backgroundColor: "#004F7F" },
   femaleCard: { backgroundColor: "#E6007A" },
-  inactiveCard: { backgroundColor: "#ddd" },
+  inactiveCard: { backgroundColor: "#aeaeae" },
   cardText: { marginTop: 8, color: "#fff", fontWeight: "600" },
-  inactiveText: { color: "#999" },
   continueBtn: {
     backgroundColor: "#004F7F",
     marginTop: 50,
