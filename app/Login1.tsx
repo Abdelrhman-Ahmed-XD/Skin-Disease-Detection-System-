@@ -1,26 +1,25 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, useRouter } from "expo-router";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Alert,
-    Animated,
-    Image,
-    KeyboardAvoidingView,
-    Linking,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Animated,
+  Image,
+  KeyboardAvoidingView,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth, db } from "../Firebase/firebaseConfig";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
 
 const STORAGE_KEY = 'signupDraft';
 
@@ -33,10 +32,17 @@ export default function Login1() {
     const [emailError, setEmailError] = useState("");
     const [loading, setLoading] = useState(false);
 
+    const [loginError, setLoginError] = useState(false);       // شادو أحمر
+    const [failCount, setFailCount] = useState(0);             // عدد المحاولات الغلط
+    const [lockSeconds, setLockSeconds] = useState(0);         // التايمر
+
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const scaleAnim = useRef(new Animated.Value(1)).current;
 
-    const togglePassword = () => setShowPassword(!showPassword);
+    const isFormValid = !!email && !!password && !emailError;
+    const isLocked = lockSeconds > 0;
 
+    const togglePassword = () => setShowPassword(!showPassword);
     const openGoogle = () => Linking.openURL("https://accounts.google.com");
     const openFacebook = () => Linking.openURL("https://www.facebook.com/login/");
 
@@ -48,6 +54,28 @@ export default function Login1() {
         else setEmailError("");
     }, [email]);
 
+    // Cleanup timer on unmount
+    useEffect(() => {
+        return () => {
+            if (timerRef.current) clearInterval(timerRef.current);
+        };
+    }, []);
+
+    const startLockTimer = () => {
+        setLockSeconds(60);
+        timerRef.current = setInterval(() => {
+            setLockSeconds((prev) => {
+                if (prev <= 1) {
+                    clearInterval(timerRef.current!);
+                    timerRef.current = null;
+                    setFailCount(0);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
     const handlePressIn = () => {
         Animated.spring(scaleAnim, { toValue: 0.96, useNativeDriver: true }).start();
     };
@@ -57,19 +85,15 @@ export default function Login1() {
     };
 
     const handleLogin = async () => {
-        // Basic validation
-        if (!email || !password) {
-            Alert.alert("Error", "Please enter your email and password.");
-            return;
-        }
+        if (isLocked) return;
 
         setLoading(true);
+        setLoginError(false);
+
         try {
-            // 1. Sign in with Firebase
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // 2. Fetch user name from Firestore
             const docSnap = await getDoc(doc(db, 'users', user.uid));
             let firstName = '';
             let lastName = '';
@@ -79,7 +103,6 @@ export default function Login1() {
                 lastName  = data.lastName  || '';
             }
 
-            // 3. Save to AsyncStorage so FirstHomePage shows name instantly
             await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({
                 uid:       user.uid,
                 email:     user.email,
@@ -87,23 +110,47 @@ export default function Login1() {
                 lastName,
             }));
 
-            // 4. Navigate to home
+            setFailCount(0);
             Router.replace("/Screensbar/FirstHomePage");
 
         } catch (error: any) {
-            let message = "Login failed. Please try again.";
-            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-                message = "Incorrect email or password.";
-            } else if (error.code === 'auth/invalid-email') {
-                message = "Please enter a valid email address.";
-            } else if (error.code === 'auth/too-many-requests') {
-                message = "Too many attempts. Please try again later.";
+            console.log("Firebase error code:", error.code);
+
+            const isCredentialError =
+                error.code === 'auth/user-not-found' ||
+                error.code === 'auth/wrong-password' ||
+                error.code === 'auth/invalid-credential' ||
+                error.code === 'auth/invalid-login-credentials';
+
+            if (isCredentialError) {
+                // شادو أحمر + امسح الحقول
+                setLoginError(true);
+                setEmail("");
+                setPassword("");
+
+                // زود عداد المحاولات
+                const newCount = failCount + 1;
+                setFailCount(newCount);
+
+                // لو وصل 5 محاولات غلط ابدأ التايمر
+                if (newCount >= 5) {
+                    startLockTimer();
+                }
             }
-            Alert.alert("Login Failed", message);
         } finally {
             setLoading(false);
         }
     };
+
+    const getButtonColor = () => {
+        if (isLocked) return "#aeaeae";
+        if (loading) return "#7BAFC4";
+        if (isFormValid) return "#004F7F";
+        return "#aeaeae";
+    };
+
+    // style الـ input لما يكون في error
+    const inputErrorStyle = loginError ? styles.inputError : {};
 
     return (
         <SafeAreaView style={styles.container} edges={["top"]}>
@@ -136,10 +183,13 @@ export default function Login1() {
                     <TextInput
                         placeholder="Enter your email"
                         value={email}
-                        onChangeText={setEmail}
+                        onChangeText={(text) => {
+                            setEmail(text);
+                            setLoginError(false);
+                        }}
                         keyboardType="email-address"
                         autoCapitalize="none"
-                        style={styles.input}
+                        style={[styles.input, inputErrorStyle]}
                     />
                     {!!emailError && <Text style={styles.errorText}>{emailError}</Text>}
 
@@ -150,8 +200,11 @@ export default function Login1() {
                             placeholder="Enter your password"
                             secureTextEntry={showPassword}
                             value={password}
-                            onChangeText={setPassword}
-                            style={styles.passwordInput}
+                            onChangeText={(text) => {
+                                setPassword(text);
+                                setLoginError(false);
+                            }}
+                            style={[styles.passwordInput, inputErrorStyle]}
                         />
                         <TouchableOpacity onPress={togglePassword} style={styles.eyeIcon}>
                             <Ionicons
@@ -161,6 +214,13 @@ export default function Login1() {
                             />
                         </TouchableOpacity>
                     </View>
+
+                    {/* رسالة الخطأ */}
+                    {loginError && (
+                        <Text style={styles.loginErrorText}>
+                            Incorrect email or password. Please try again.
+                        </Text>
+                    )}
 
                     <Pressable style={{ marginTop: 10 }} onPress={() => Router.push("/Forgetpassword")}>
                         <Text style={styles.forgetText}>Forget Password?</Text>
@@ -172,8 +232,8 @@ export default function Login1() {
                             onPress={handleLogin}
                             onPressIn={handlePressIn}
                             onPressOut={handlePressOut}
-                            disabled={loading}
-                            style={[styles.loginBtn, { backgroundColor: loading ? "#7BAFC4" : "#004F7F" }]}
+                            disabled={loading || !isFormValid || isLocked}
+                            style={[styles.loginBtn, { backgroundColor: getButtonColor() }]}
                         >
                             <Text style={styles.loginText}>{loading ? "Logging in..." : "Login"}</Text>
                         </TouchableOpacity>
@@ -202,6 +262,16 @@ export default function Login1() {
                             <Text style={styles.signUpText}>Sign Up</Text>
                         </TouchableOpacity>
                     </View>
+
+                    {/* التايمر - يظهر بس لو في lock */}
+                    {isLocked && (
+                        <View style={styles.timerContainer}>
+                            <Ionicons name="time-outline" size={20} color="#D9534F" />
+                            <Text style={styles.timerText}>
+                                Too many attempts. Try again in {lockSeconds}s
+                            </Text>
+                        </View>
+                    )}
 
                 </ScrollView>
             </KeyboardAvoidingView>
@@ -256,6 +326,14 @@ const styles = StyleSheet.create({
         padding: 12,
         marginTop: 10,
     },
+    inputError: {
+        borderColor: "#D9534F",
+        shadowColor: "#D9534F",
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 6,
+        elevation: 4,
+    },
     passwordWrapper: {
         position: "relative",
         marginTop: 10,
@@ -277,6 +355,13 @@ const styles = StyleSheet.create({
     errorText: {
         color: "red",
         marginTop: 6,
+    },
+    loginErrorText: {
+        color: "#D9534F",
+        marginTop: 8,
+        fontSize: 13,
+        textAlign: "center",
+        fontWeight: "600",
     },
     forgetText: {
         color: "#004F7F",
@@ -330,5 +415,22 @@ const styles = StyleSheet.create({
     signUpText: {
         color: "#004F7F",
         textDecorationLine: "underline",
+    },
+    timerContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        marginTop: 20,
+        padding: 12,
+        backgroundColor: "#FFE5E5",
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: "#D9534F",
+    },
+    timerText: {
+        color: "#D9534F",
+        fontWeight: "600",
+        fontSize: 14,
     },
 });

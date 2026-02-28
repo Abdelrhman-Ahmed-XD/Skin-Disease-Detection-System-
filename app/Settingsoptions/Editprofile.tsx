@@ -444,13 +444,13 @@ export default function EditProfile() {
   <Text style={styles.changePasswordText}>Change Password</Text>
 </TouchableOpacity>
         {/* ── Confirm ── */}
-        <TouchableOpacity
+        <TouchableOpacity 
           style={[
             styles.confirmBtn,
             isDirty ? styles.confirmBtnActive : styles.confirmBtnDisabled,
             saving && { opacity: 0.7 },
           ]}
-          onPress={handleSave}
+          onPress={()=> router.push('/Screensbar/Setting')}
           disabled={!isDirty || saving}
           activeOpacity={0.85}
         >

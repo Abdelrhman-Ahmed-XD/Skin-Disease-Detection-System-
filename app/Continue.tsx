@@ -1,8 +1,8 @@
-import React from 'react'
-import { View ,Text ,Image ,TouchableOpacity,StyleSheet, Pressable} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { router } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { router } from 'expo-router'
+import React from 'react'
+import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 
 export default function Continue() {
@@ -24,7 +24,7 @@ export default function Continue() {
           get the best experience, or tap Continue to proceed.
         </Text>
       <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 40 ,width:"80%"}}>
-          <TouchableOpacity
+          <TouchableOpacity onPress={() => router.push("/Settingsoptions/Editprofile")}
             style={{
               backgroundColor: "#000",
               padding: 12,
@@ -39,7 +39,7 @@ export default function Continue() {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => router.push("/Starthome")}
+          <TouchableOpacity onPress={() => router.push("/Screensbar/Nextscreens")}
             style={{
               backgroundColor: "#0B4F6C",
               padding: 12,
