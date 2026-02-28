@@ -17,6 +17,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { auth, db } from "../../Firebase/firebaseConfig";
+import {
+  NOTIFICATIONS_ENABLED_KEY,
+  NOTIFICATIONS_STORAGE_KEY,
+} from '../Screensbar/notificationsData'; // ← adjust path as needed
 
 const STORAGE_KEY       = 'signupDraft';
 const MOLES_STORAGE_KEY = 'savedMoles';
@@ -26,11 +30,9 @@ const { width, height } = Dimensions.get('window');
 function inRect(nx: number, ny: number, x1: number, y1: number, x2: number, y2: number) {
     return nx >= x1 && nx <= x2 && ny >= y1 && ny <= y2;
 }
-
 function inEllipse(nx: number, ny: number, cx: number, cy: number, rx: number, ry: number) {
     return ((nx - cx) / rx) ** 2 + ((ny - cy) / ry) ** 2 <= 1;
 }
-
 function checkBodyHit(nx: number, ny: number, view: 'front' | 'back'): boolean {
     if (inEllipse(nx, ny, 0.50, 0.09, 0.13, 0.10)) return true;
     if (inRect(nx, ny, 0.43, 0.17, 0.57, 0.22))    return true;
@@ -48,36 +50,29 @@ function checkBodyHit(nx: number, ny: number, view: 'front' | 'back'): boolean {
 }
 
 type Mole = {
-    id: string;
-    x: number;
-    y: number;
-    timestamp: number;
-    photoUri?: string;
-    bodyView: 'front' | 'back';
+    id: string; x: number; y: number; timestamp: number;
+    photoUri?: string; bodyView: 'front' | 'back';
 };
-
 type BodyView = 'front' | 'back';
 
 export default function FirstHomePage() {
     const router = useRouter();
-    const [userName, setUserName] = useState('');
-    const [photoUri, setPhotoUri] = useState<string | null>(null);
-    const [bodyView, setBodyView] = useState<BodyView>('front');
-    const [moles,    setMoles]    = useState<Mole[]>([]);
+    const [userName, setUserName]   = useState('');
+    const [photoUri, setPhotoUri]   = useState<string | null>(null);
+    const [bodyView, setBodyView]   = useState<BodyView>('front');
+    const [moles, setMoles]         = useState<Mole[]>([]);
     const [activeTab, setActiveTab] = useState<string>('Home');
+    const [unreadCount, setUnreadCount]           = useState<number>(0);
+    const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
 
-    useEffect(() => {
-        bodyViewRef.current = bodyView;
-    }, [bodyView]);
+    useEffect(() => { bodyViewRef.current = bodyView; }, [bodyView]);
 
-    // ── Zoom & Pan ────────────────────────────────────────────
     const scale      = useRef(new Animated.Value(1)).current;
     const translateX = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(0)).current;
-
-    const scaleVal       = useRef(1);
-    const txVal          = useRef(0);
-    const tyVal          = useRef(0);
+    const scaleVal   = useRef(1);
+    const txVal      = useRef(0);
+    const tyVal      = useRef(0);
     const bodyViewRef    = useRef<BodyView>('front');
     const bodyWrapperRef = useRef<any>(null);
 
@@ -85,11 +80,7 @@ export default function FirstHomePage() {
         const s = scale.addListener(({ value })      => { scaleVal.current = value; });
         const x = translateX.addListener(({ value }) => { txVal.current    = value; });
         const y = translateY.addListener(({ value }) => { tyVal.current    = value; });
-        return () => {
-            scale.removeListener(s);
-            translateX.removeListener(x);
-            translateY.removeListener(y);
-        };
+        return () => { scale.removeListener(s); translateX.removeListener(x); translateY.removeListener(y); };
     }, []);
 
     const lastDistance = useRef<number | null>(null);
@@ -102,169 +93,137 @@ export default function FirstHomePage() {
     const clampTranslation = (tx: number, ty: number, sc: number) => {
         const maxX = (width  * (sc - 1)) / 2;
         const maxY = (height * (sc - 1)) / 2;
-        return {
-            x: Math.max(-maxX, Math.min(maxX, tx)),
-            y: Math.max(-maxY, Math.min(maxY, ty)),
-        };
+        return { x: Math.max(-maxX, Math.min(maxX, tx)), y: Math.max(-maxY, Math.min(maxY, ty)) };
     };
 
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder:  () => true,
-
-            onPanResponderGrant: (evt) => {
-                const touches = evt.nativeEvent.touches;
-                isPinching.current = touches.length >= 2;
-                if (touches.length === 1) {
-                    tapStartTime.current = Date.now();
-                    tapStartPos.current  = { x: touches[0].pageX, y: touches[0].pageY };
-                    panStartTx.current   = txVal.current;
-                    panStartTy.current   = tyVal.current;
-                } else if (touches.length === 2) {
-                    const dx = touches[0].pageX - touches[1].pageX;
-                    const dy = touches[0].pageY - touches[1].pageY;
-                    lastDistance.current = Math.sqrt(dx * dx + dy * dy);
+    const panResponder = useRef(PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder:  () => true,
+        onPanResponderGrant: (evt) => {
+            const touches = evt.nativeEvent.touches;
+            isPinching.current = touches.length >= 2;
+            if (touches.length === 1) {
+                tapStartTime.current = Date.now();
+                tapStartPos.current  = { x: touches[0].pageX, y: touches[0].pageY };
+                panStartTx.current   = txVal.current;
+                panStartTy.current   = tyVal.current;
+            } else if (touches.length === 2) {
+                const dx = touches[0].pageX - touches[1].pageX;
+                const dy = touches[0].pageY - touches[1].pageY;
+                lastDistance.current = Math.sqrt(dx * dx + dy * dy);
+            }
+        },
+        onPanResponderMove: (evt) => {
+            const touches = evt.nativeEvent.touches;
+            if (touches.length === 2) {
+                isPinching.current = true;
+                const dx      = touches[0].pageX - touches[1].pageX;
+                const dy      = touches[0].pageY - touches[1].pageY;
+                const newDist = Math.sqrt(dx * dx + dy * dy);
+                if (lastDistance.current !== null) {
+                    const ratio    = newDist / lastDistance.current;
+                    const newScale = Math.max(1, Math.min(4, scaleVal.current * ratio));
+                    scale.setValue(newScale);
+                    scaleVal.current = newScale;
                 }
-            },
-
-            onPanResponderMove: (evt) => {
-                const touches = evt.nativeEvent.touches;
-
-                if (touches.length === 2) {
-                    isPinching.current = true;
-                    const dx      = touches[0].pageX - touches[1].pageX;
-                    const dy      = touches[0].pageY - touches[1].pageY;
-                    const newDist = Math.sqrt(dx * dx + dy * dy);
-                    if (lastDistance.current !== null) {
-                        const ratio    = newDist / lastDistance.current;
-                        const newScale = Math.max(1, Math.min(4, scaleVal.current * ratio));
-                        scale.setValue(newScale);
-                        scaleVal.current = newScale;
+                lastDistance.current = newDist;
+                return;
+            }
+            if (touches.length === 1 && scaleVal.current > 1 && !isPinching.current) {
+                const dx      = touches[0].pageX - tapStartPos.current.x;
+                const dy      = touches[0].pageY - tapStartPos.current.y;
+                const clamped = clampTranslation(panStartTx.current + dx, panStartTy.current + dy, scaleVal.current);
+                translateX.setValue(clamped.x); translateY.setValue(clamped.y);
+                txVal.current = clamped.x; tyVal.current = clamped.y;
+            }
+        },
+        onPanResponderRelease: (evt) => {
+            const touch = evt.nativeEvent.changedTouches[0];
+            lastDistance.current = null;
+            if (isPinching.current) { isPinching.current = false; return; }
+            const elapsed = Date.now() - tapStartTime.current;
+            const movedX  = Math.abs(touch.pageX - tapStartPos.current.x);
+            const movedY  = Math.abs(touch.pageY - tapStartPos.current.y);
+            if (elapsed < 300 && movedX < 10 && movedY < 10) {
+                const doNavigate = (imageLeft: number, imageTop: number, imageWidth: number, imageHeight: number) => {
+                    const imageCenterX = imageLeft + imageWidth  / 2;
+                    const imageCenterY = imageTop  + imageHeight / 2;
+                    const touchAfterTranslate_X = touch.pageX - txVal.current;
+                    const touchAfterTranslate_Y = touch.pageY - tyVal.current;
+                    const relX = (touchAfterTranslate_X - imageCenterX) / scaleVal.current + (imageWidth  / 2);
+                    const relY = (touchAfterTranslate_Y - imageCenterY) / scaleVal.current + (imageHeight / 2);
+                    const nx = relX / imageWidth; const ny = relY / imageHeight;
+                    if (checkBodyHit(nx, ny, bodyViewRef.current)) {
+                        router.push({ pathname: '/Screensbar/Camera', params: { tapX: relX.toFixed(2), tapY: relY.toFixed(2), bodyView: bodyViewRef.current } });
                     }
-                    lastDistance.current = newDist;
-                    return;
+                };
+                if (bodyWrapperRef.current) {
+                    bodyWrapperRef.current.measure((_fx: number, _fy: number, fw: number, fh: number, px: number, py: number) => {
+                        const imgW = width * 0.85; const imgH = height * 0.55;
+                        doNavigate(px + (fw - imgW) / 2, py + (fh - imgH) / 2, imgW, imgH);
+                    });
                 }
+            }
+        },
+    })).current;
 
-                if (touches.length === 1 && scaleVal.current > 1 && !isPinching.current) {
-                    const dx      = touches[0].pageX - tapStartPos.current.x;
-                    const dy      = touches[0].pageY - tapStartPos.current.y;
-                    const clamped = clampTranslation(
-                        panStartTx.current + dx,
-                        panStartTy.current + dy,
-                        scaleVal.current
-                    );
-                    translateX.setValue(clamped.x);
-                    translateY.setValue(clamped.y);
-                    txVal.current = clamped.x;
-                    tyVal.current = clamped.y;
+    // ── Load unread count + notifications enabled status ──────────────────────
+    const loadNotifData = async () => {
+        try {
+            const enabledVal = await AsyncStorage.getItem(NOTIFICATIONS_ENABLED_KEY);
+            const enabled = enabledVal === null ? true : enabledVal === 'true';
+            setNotificationsEnabled(enabled);
+
+            if (enabled) {
+                const saved = await AsyncStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
+                if (saved) {
+                    const notifs = JSON.parse(saved);
+                    setUnreadCount(notifs.filter((n: any) => !n.read).length);
                 }
-            },
+            } else {
+                setUnreadCount(0); // hide badge when disabled
+            }
+        } catch (err) {
+            console.log('Error loading notif data:', err);
+        }
+    };
 
-            onPanResponderRelease: (evt) => {
-                const touch = evt.nativeEvent.changedTouches[0];
-                lastDistance.current = null;
-
-                if (isPinching.current) {
-                    isPinching.current = false;
-                    return;
-                }
-
-                const elapsed = Date.now() - tapStartTime.current;
-                const movedX  = Math.abs(touch.pageX - tapStartPos.current.x);
-                const movedY  = Math.abs(touch.pageY - tapStartPos.current.y);
-
-                if (elapsed < 300 && movedX < 10 && movedY < 10) {
-                    const doNavigate = (
-                        imageLeft: number, imageTop: number,
-                        imageWidth: number, imageHeight: number
-                    ) => {
-                        const imageCenterX = imageLeft + imageWidth  / 2;
-                        const imageCenterY = imageTop  + imageHeight / 2;
-
-                        const touchAfterTranslate_X = touch.pageX - txVal.current;
-                        const touchAfterTranslate_Y = touch.pageY - tyVal.current;
-
-                        const relX = (touchAfterTranslate_X - imageCenterX) / scaleVal.current + (imageWidth  / 2);
-                        const relY = (touchAfterTranslate_Y - imageCenterY) / scaleVal.current + (imageHeight / 2);
-
-                        const nx = relX / imageWidth;
-                        const ny = relY / imageHeight;
-
-                        const isOnBody = checkBodyHit(nx, ny, bodyViewRef.current);
-
-                        if (isOnBody) {
-                            router.push({
-                                pathname: '/Screensbar/Camera',
-                                params: {
-                                    tapX:     relX.toFixed(2),
-                                    tapY:     relY.toFixed(2),
-                                    bodyView: bodyViewRef.current,
-                                },
-                            });
-                        }
-                    };
-
-                    if (bodyWrapperRef.current) {
-                        bodyWrapperRef.current.measure(
-                            (_fx: number, _fy: number, fw: number, fh: number, px: number, py: number) => {
-                                const imgW    = width * 0.85;
-                                const imgH    = height * 0.55;
-                                const imgLeft = px + (fw - imgW) / 2;
-                                const imgTop  = py + (fh - imgH) / 2;
-                                doNavigate(imgLeft, imgTop, imgW, imgH);
-                            }
-                        );
-                    }
-                }
-            },
-        })
-    ).current;
-
-    // ── Load user data (name + photo) ─────────────────────────
+    // ── Load user data + notification status on every focus ───────────────────
     useFocusEffect(
         React.useCallback(() => {
             setActiveTab('Home');
-
             const loadUserData = async () => {
                 try {
-                    // Load from AsyncStorage first (instant)
                     const saved = await AsyncStorage.getItem(STORAGE_KEY);
                     if (saved) {
                         const data = JSON.parse(saved);
                         setUserName(`${data.firstName || ''} ${data.lastName || ''}`.trim());
                         setPhotoUri(data.photoUri || null);
                     }
-
-                    // Then fetch from Firestore (always up to date)
                     const currentUser = auth.currentUser;
                     if (currentUser) {
                         const docSnap = await getDoc(doc(db, 'users', currentUser.uid));
                         if (docSnap.exists()) {
                             const data = docSnap.data();
-                            const fullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
-                            setUserName(fullName);
+                            setUserName(`${data.firstName || ''} ${data.lastName || ''}`.trim());
                         }
                     }
                 } catch (err) {
                     console.log('Error loading user data:', err);
                 }
             };
-
             loadUserData();
+            loadNotifData(); // ← reload badge + enabled state every focus
         }, [])
     );
 
-    // ── Load moles ────────────────────────────────────────────
     useFocusEffect(
         React.useCallback(() => {
             const loadMoles = async () => {
                 try {
                     const saved = await AsyncStorage.getItem(MOLES_STORAGE_KEY);
                     if (saved) setMoles(JSON.parse(saved));
-                } catch (err) {
-                    console.log('Error loading moles:', err);
-                }
+                } catch (err) { console.log('Error loading moles:', err); }
             };
             loadMoles();
         }, [])
@@ -275,11 +234,8 @@ export default function FirstHomePage() {
     const deleteMole = async (moleId: string) => {
         const updated = moles.filter((m) => m.id !== moleId);
         setMoles(updated);
-        try {
-            await AsyncStorage.setItem(MOLES_STORAGE_KEY, JSON.stringify(updated));
-        } catch (err) {
-            console.log('Error deleting mole:', err);
-        }
+        try { await AsyncStorage.setItem(MOLES_STORAGE_KEY, JSON.stringify(updated)); }
+        catch (err) { console.log('Error deleting mole:', err); }
     };
 
     const toggleBodyView = (view: BodyView) => {
@@ -289,9 +245,7 @@ export default function FirstHomePage() {
             Animated.spring(translateX, { toValue: 0, useNativeDriver: true }),
             Animated.spring(translateY, { toValue: 0, useNativeDriver: true }),
         ]).start();
-        scaleVal.current = 1;
-        txVal.current    = 0;
-        tyVal.current    = 0;
+        scaleVal.current = 1; txVal.current = 0; tyVal.current = 0;
     };
 
     const bottomTabs = [
@@ -305,10 +259,10 @@ export default function FirstHomePage() {
     const handleTabPress = (tabName: string) => {
         setActiveTab(tabName);
         switch (tabName) {
-            case 'Camera':   router.push('/Screensbar/Camera');   break;
-            case 'History':  router.push('/Screensbar/History');  break;
-            case 'Reports':  router.push('/Screensbar/Reports');  break;
-            case 'Settings': router.push('/Screensbar/Setting');  break;
+            case 'Camera':   router.push('/Screensbar/Camera');        break;
+            case 'History':  router.push('/Screensbar/History');       break;
+            case 'Reports':  router.push('/Screensbar/Reports');       break;
+            case 'Settings': router.push('/Screensbar/Setting');       break;
         }
     };
 
@@ -319,17 +273,9 @@ export default function FirstHomePage() {
             {/* Header */}
             <View style={styles.headerCard}>
                 <View style={styles.headerContent}>
-                    {/* Profile icon / photo */}
-                    <TouchableOpacity
-                        style={styles.profileIconContainer}
-                        onPress={() => router.push('/Settingsoptions/Editprofile')}
-                    >
+                    <TouchableOpacity style={styles.profileIconContainer} onPress={() => router.push('/Settingsoptions/Editprofile')}>
                         {photoUri ? (
-                            <Image
-                                source={{ uri: photoUri }}
-                                style={styles.profilePhoto}
-                                resizeMode="cover"
-                            />
+                            <Image source={{ uri: photoUri }} style={styles.profilePhoto} resizeMode="cover" />
                         ) : (
                             <Ionicons name="person-outline" size={32} color="#004F7F" />
                         )}
@@ -337,97 +283,54 @@ export default function FirstHomePage() {
 
                     <View style={styles.welcomeContainer}>
                         <Text style={styles.welcomeLabel}>Welcome,</Text>
-                        <Text style={{ fontWeight: 'bold', marginLeft: 4, marginTop: 3, fontSize: 17 }}>
-                            {userName}
-                        </Text>
+                        <Text style={{ fontWeight: 'bold', marginLeft: 4, marginTop: 3, fontSize: 17 }}>{userName}</Text>
                     </View>
+
+                    {/* Notification Button */}
                     <TouchableOpacity style={styles.notificationButton} onPress={() => router.push('/Screensbar/Notifications')}>
-                        <Ionicons name="notifications-outline" size={28} color="#00A3A3" />
+                        <Ionicons
+                            name={notificationsEnabled ? 'notifications-outline' : 'notifications-off-outline'}
+                            size={28}
+                            color={notificationsEnabled ? '#00A3A3' : '#9CA3AF'}
+                        />
+                        {/* Badge: only show if enabled AND there are unread */}
+                        {notificationsEnabled && unreadCount > 0 && (
+                            <View style={styles.notifBadge}>
+                                <Text style={styles.notifBadgeText}>
+                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                </Text>
+                            </View>
+                        )}
                     </TouchableOpacity>
                 </View>
             </View>
 
             {/* Title */}
             <View style={styles.titleContainer}>
-                <Text style={styles.title}>
-                    Let&#39;s Check your <Text style={styles.titleBold}>Skin</Text>
-                </Text>
+                <Text style={styles.title}>Let&#39;s Check your <Text style={styles.titleBold}>Skin</Text></Text>
             </View>
 
-            {/* Body + Gesture */}
+            {/* Body */}
             <View style={styles.bodyMainContainer}>
-                <View
-                    style={styles.bodyTouchable}
-                    {...panResponder.panHandlers}
-                    ref={(r) => { bodyWrapperRef.current = r; }}
-                >
-                    <Animated.View
-                        style={[
-                            styles.bodyImageWrapper,
-                            { transform: [{ scale }, { translateX }, { translateY }] },
-                        ]}
-                    >
+                <View style={styles.bodyTouchable} {...panResponder.panHandlers} ref={(r) => { bodyWrapperRef.current = r; }}>
+                    <Animated.View style={[styles.bodyImageWrapper, { transform: [{ scale }, { translateX }, { translateY }] }]}>
                         <Image
-                            source={
-                                bodyView === 'front'
-                                    ? require('../../assets/images/body-front.png')
-                                    : require('../../assets/images/body-back.png')
-                            }
+                            source={bodyView === 'front' ? require('../../assets/images/body-front.png') : require('../../assets/images/body-back.png')}
                             style={styles.bodyImage}
                             resizeMode="contain"
                         />
-
                         {currentMoles.map((mole) => {
                             const MARKER_SIZE = 28;
-                            const markerLeft  = mole.x - (MARKER_SIZE / 2);
-                            const markerTop   = mole.y - (MARKER_SIZE / 2);
-
                             return (
-                                <View
-                                    key={mole.id}
-                                    style={[styles.moleContainer, { left: markerLeft, top: markerTop }]}
-                                    pointerEvents="box-none"
-                                >
+                                <View key={mole.id} style={[styles.moleContainer, { left: mole.x - MARKER_SIZE / 2, top: mole.y - MARKER_SIZE / 2 }]} pointerEvents="box-none">
                                     <TouchableOpacity
-                                        activeOpacity={0.8}
-                                        delayLongPress={500}
+                                        activeOpacity={0.8} delayLongPress={500}
                                         style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                                        onPress={() => {
-                                            router.push({
-                                                pathname: '/Screensbar/Camera',
-                                                params: {
-                                                    tapX:             mole.x.toFixed(2),
-                                                    tapY:             mole.y.toFixed(2),
-                                                    bodyView:         mole.bodyView,
-                                                    moleId:           mole.id,
-                                                    existingPhotoUri: mole.photoUri || '',
-                                                },
-                                            });
-                                        }}
-                                        onLongPress={() => {
-                                            Alert.alert(
-                                                'Delete Point',
-                                                'Are you sure you want to delete this point?',
-                                                [
-                                                    { text: 'Cancel', style: 'cancel' },
-                                                    {
-                                                        text: 'Delete',
-                                                        style: 'destructive',
-                                                        onPress: () => deleteMole(mole.id),
-                                                    },
-                                                ]
-                                            );
-                                        }}
+                                        onPress={() => router.push({ pathname: '/Screensbar/Camera', params: { tapX: mole.x.toFixed(2), tapY: mole.y.toFixed(2), bodyView: mole.bodyView, moleId: mole.id, existingPhotoUri: mole.photoUri || '' } })}
+                                        onLongPress={() => Alert.alert('Delete Point', 'Are you sure?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => deleteMole(mole.id) }])}
                                     >
-                                        <View style={styles.moleInner}>
-                                            <Text style={styles.moleIcon}>+</Text>
-                                        </View>
-                                        {mole.photoUri && (
-                                            <Image
-                                                source={{ uri: mole.photoUri }}
-                                                style={styles.moleThumbnail}
-                                            />
-                                        )}
+                                        <View style={styles.moleInner}><Text style={styles.moleIcon}>+</Text></View>
+                                        {mole.photoUri && <Image source={{ uri: mole.photoUri }} style={styles.moleThumbnail} />}
                                     </TouchableOpacity>
                                 </View>
                             );
@@ -439,21 +342,11 @@ export default function FirstHomePage() {
             {/* Toggle Front/Back */}
             <View style={styles.bottomControls}>
                 <View style={styles.toggleWrapper}>
-                    <TouchableOpacity
-                        onPress={() => toggleBodyView('front')}
-                        style={[styles.toggleButton, bodyView === 'front' && styles.toggleButtonActive]}
-                    >
-                        <Text style={[styles.toggleText, bodyView === 'front' && styles.toggleTextActive]}>
-                            Front
-                        </Text>
+                    <TouchableOpacity onPress={() => toggleBodyView('front')} style={[styles.toggleButton, bodyView === 'front' && styles.toggleButtonActive]}>
+                        <Text style={[styles.toggleText, bodyView === 'front' && styles.toggleTextActive]}>Front</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => toggleBodyView('back')}
-                        style={[styles.toggleButton, bodyView === 'back' && styles.toggleButtonActive]}
-                    >
-                        <Text style={[styles.toggleText, bodyView === 'back' && styles.toggleTextActive]}>
-                            Back
-                        </Text>
+                    <TouchableOpacity onPress={() => toggleBodyView('back')} style={[styles.toggleButton, bodyView === 'back' && styles.toggleButtonActive]}>
+                        <Text style={[styles.toggleText, bodyView === 'back' && styles.toggleTextActive]}>Back</Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -464,21 +357,11 @@ export default function FirstHomePage() {
                     {['Home', 'Reports'].map((tabName) => {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
                         return (
-                            <TouchableOpacity
-                                key={tab.name}
-                                style={styles.navItem}
-                                onPress={() => handleTabPress(tab.name)}
-                            >
+                            <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
                                 <View style={[styles.navIcon, activeTab === tab.name && styles.navIconActive]}>
-                                    <Ionicons
-                                        name={tab.icon as any}
-                                        size={26}
-                                        color={activeTab === tab.name ? '#004F7F' : '#6B7280'}
-                                    />
+                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? '#004F7F' : '#6B7280'} />
                                 </View>
-                                <Text style={[styles.navText, activeTab === tab.name && styles.navTextActive]}>
-                                    {tab.name}
-                                </Text>
+                                <Text style={[styles.navText, activeTab === tab.name && styles.navTextActive]}>{tab.name}</Text>
                             </TouchableOpacity>
                         );
                     })}
@@ -486,35 +369,17 @@ export default function FirstHomePage() {
                     {['History', 'Settings'].map((tabName) => {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
                         return (
-                            <TouchableOpacity
-                                key={tab.name}
-                                style={styles.navItem}
-                                onPress={() => handleTabPress(tab.name)}
-                            >
+                            <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
                                 <View style={[styles.navIcon, activeTab === tab.name && styles.navIconActive]}>
-                                    <Ionicons
-                                        name={tab.icon as any}
-                                        size={26}
-                                        color={activeTab === tab.name ? '#004F7F' : '#6B7280'}
-                                    />
+                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? '#004F7F' : '#6B7280'} />
                                 </View>
-                                <Text style={[styles.navText, activeTab === tab.name && styles.navTextActive]}>
-                                    {tab.name}
-                                </Text>
+                                <Text style={[styles.navText, activeTab === tab.name && styles.navTextActive]}>{tab.name}</Text>
                             </TouchableOpacity>
                         );
                     })}
                 </View>
-                <TouchableOpacity
-                    style={[styles.cameraButton, activeTab === 'Camera' && styles.cameraButtonActive]}
-                    onPress={() => handleTabPress('Camera')}
-                    activeOpacity={0.85}
-                >
-                    <Ionicons
-                        name="camera-outline"
-                        size={30}
-                        color={activeTab === 'Camera' ? '#004F7F' : '#6B7280'}
-                    />
+                <TouchableOpacity style={[styles.cameraButton, activeTab === 'Camera' && styles.cameraButtonActive]} onPress={() => handleTabPress('Camera')} activeOpacity={0.85}>
+                    <Ionicons name="camera-outline" size={30} color={activeTab === 'Camera' ? '#004F7F' : '#6B7280'} />
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
@@ -548,36 +413,15 @@ const styles = StyleSheet.create({
     navIconActive:       { backgroundColor: '#E8F4F8', borderWidth: 2, borderColor: '#C5E3ED' },
     navText:             { fontSize: 11, color: '#6B7280', fontWeight: '500' },
     navTextActive:       { fontSize: 11, color: '#004F7F', fontWeight: '700' },
-    cameraButton: {
-        position: 'absolute', top: -26, alignSelf: 'center',
-        width: 60, height: 60, borderRadius: 30,
-        backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center',
-        borderWidth: 3, borderColor: '#C5E3ED',
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.12, shadowRadius: 6, elevation: 6,
-    },
-    cameraButtonActive: { borderColor: '#004F7F', backgroundColor: '#E8F4F8' },
-
-    // ── Header ────────────────────────────────────────────────
-    headerCard: {
-        backgroundColor: '#FFFFFF', marginHorizontal: 16, marginTop: 12, marginBottom: 8,
-        borderRadius: 20, paddingVertical: 14, paddingHorizontal: 16,
-        shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
-    },
-    headerContent:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    profileIconContainer: {
-        width: 52, height: 52, borderRadius: 26,
-        backgroundColor: '#E8F4F8', justifyContent: 'center', alignItems: 'center',
-        borderWidth: 2, borderColor: '#C5E3ED',
-        overflow: 'hidden',
-    },
-    profilePhoto:      { width: 52, height: 52, borderRadius: 26 },
-    welcomeContainer:  { flex: 1, marginLeft: 12, flexDirection: 'row', alignItems: 'center' },
-    welcomeLabel:      { fontSize: 18, color: '#00A3A3', fontStyle: 'italic' },
-    userName:          { fontSize: 18, fontWeight: '700', color: '#1F2937', marginTop: 2 },
-    notificationButton: {
-        width: 44, height: 44, borderRadius: 22,
-        backgroundColor: '#F9FAFB', justifyContent: 'center', alignItems: 'center',
-    },
+    cameraButton:        { position: 'absolute', top: -26, alignSelf: 'center', width: 60, height: 60, borderRadius: 30, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center', borderWidth: 3, borderColor: '#C5E3ED', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 6 },
+    cameraButtonActive:  { borderColor: '#004F7F', backgroundColor: '#E8F4F8' },
+    headerCard:          { backgroundColor: '#FFFFFF', marginHorizontal: 16, marginTop: 12, marginBottom: 8, borderRadius: 20, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
+    headerContent:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    profileIconContainer: { width: 52, height: 52, borderRadius: 26, backgroundColor: '#E8F4F8', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: '#C5E3ED', overflow: 'hidden' },
+    profilePhoto:        { width: 52, height: 52, borderRadius: 26 },
+    welcomeContainer:    { flex: 1, marginLeft: 12, flexDirection: 'row', alignItems: 'center' },
+    welcomeLabel:        { fontSize: 18, color: '#00A3A3', fontStyle: 'italic' },
+    notificationButton:  { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F9FAFB', justifyContent: 'center', alignItems: 'center' },
+    notifBadge:          { position: 'absolute', top: 4, right: 4, backgroundColor: '#EF4444', borderRadius: 9, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1.5, borderColor: '#FFFFFF' },
+    notifBadgeText:      { color: '#FFFFFF', fontSize: 10, fontWeight: '800', lineHeight: 13 },
 });
