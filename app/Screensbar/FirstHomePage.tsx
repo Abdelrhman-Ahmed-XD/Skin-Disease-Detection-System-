@@ -60,7 +60,7 @@ export default function FirstHomePage() {
     const [bodyView, setBodyView]   = useState<BodyView>('front');
     const [moles, setMoles]         = useState<Mole[]>([]);
     const [activeTab, setActiveTab] = useState<string>('Home');
-    const [unreadCount, setUnreadCount]           = useState<number>(0);
+    const [unreadCount, setUnreadCount]                   = useState<number>(0);
     const [notificationsEnabled, setNotificationsEnabled] = useState<boolean>(true);
 
     useEffect(() => { bodyViewRef.current = bodyView; }, [bodyView]);
@@ -186,7 +186,7 @@ export default function FirstHomePage() {
 
     useFocusEffect(
         React.useCallback(() => {
-            setActiveTab('Home');
+            // ✅ FIX: لا نعمل setActiveTab('Home') هنا عشان متبطلش الـ tab الـ active
             const loadUserData = async () => {
                 try {
                     const saved = await AsyncStorage.getItem(STORAGE_KEY);
@@ -251,13 +251,14 @@ export default function FirstHomePage() {
         { name: 'Camera',   icon: 'camera-outline' },
     ];
 
+    // ✅ FIX: استخدام router.replace بدل router.push للـ tabs
     const handleTabPress = (tabName: string) => {
         setActiveTab(tabName);
         switch (tabName) {
-            case 'Camera':   router.push('/Screensbar/Camera');        break;
-            case 'History':  router.push('/Screensbar/History');       break;
-            case 'Reports':  router.push('/Screensbar/Reports');       break;
-            case 'Settings': router.push('/Screensbar/Setting');       break;
+            case 'Camera':   router.push('/Screensbar/Camera');           break;
+            case 'History':  router.replace('/Screensbar/History');       break;
+            case 'Reports':  router.replace('/Screensbar/Reports');       break;
+            case 'Settings': router.replace('/Screensbar/Setting');       break;
         }
     };
 
@@ -268,7 +269,10 @@ export default function FirstHomePage() {
             {/* Header */}
             <View style={[styles.headerCard, { backgroundColor: colors.card }]}>
                 <View style={styles.headerContent}>
-                    <TouchableOpacity style={[styles.profileIconContainer, { backgroundColor: isDark ? '#2A3F50' : '#E8F4F8', borderColor: isDark ? '#374151' : '#C5E3ED' }]} onPress={() => router.push('/Settingsoptions/Editprofile')}>
+                    <TouchableOpacity
+                        style={[styles.profileIconContainer, { backgroundColor: isDark ? '#2A3F50' : '#E8F4F8', borderColor: isDark ? '#374151' : '#C5E3ED' }]}
+                        onPress={() => router.push('/Settingsoptions/Editprofile')}
+                    >
                         {photoUri ? (
                             <Image source={{ uri: photoUri }} style={styles.profilePhoto} resizeMode="cover" />
                         ) : (
@@ -281,7 +285,10 @@ export default function FirstHomePage() {
                         <Text style={[styles.userName, { color: colors.text }]}>{userName}</Text>
                     </View>
 
-                    <TouchableOpacity style={[styles.notificationButton, { backgroundColor: isDark ? '#1E2A35' : '#F9FAFB' }]} onPress={() => router.push('/Screensbar/Notifications')}>
+                    <TouchableOpacity
+                        style={[styles.notificationButton, { backgroundColor: isDark ? '#1E2A35' : '#F9FAFB' }]}
+                        onPress={() => router.push('/Screensbar/Notifications')}
+                    >
                         <Ionicons
                             name={notificationsEnabled ? 'notifications-outline' : 'notifications-off-outline'}
                             size={28}
@@ -300,7 +307,9 @@ export default function FirstHomePage() {
 
             {/* Title */}
             <View style={styles.titleContainer}>
-                <Text style={[styles.title, { color: colors.text }]}>Let&#39;s Check your <Text style={[styles.titleBold, { color: colors.text }]}>Skin</Text></Text>
+                <Text style={[styles.title, { color: colors.text }]}>
+                    Let&#39;s Check your <Text style={[styles.titleBold, { color: colors.text }]}>Skin</Text>
+                </Text>
             </View>
 
             {/* Body */}
@@ -308,22 +317,39 @@ export default function FirstHomePage() {
                 <View style={styles.bodyTouchable} {...panResponder.panHandlers} ref={(r) => { bodyWrapperRef.current = r; }}>
                     <Animated.View style={[styles.bodyImageWrapper, { backgroundColor: colors.background, transform: [{ scale }, { translateX }, { translateY }] }]}>
                         <Image
-                            source={bodyView === 'front' ? require('../../assets/images/body-front.png') : require('../../assets/images/body-back.png')}
+                            source={bodyView === 'front'
+                                ? require('../../assets/images/body-front.png')
+                                : require('../../assets/images/body-back.png')}
                             style={[styles.bodyImage, { backgroundColor: colors.background }]}
                             resizeMode="contain"
                         />
                         {currentMoles.map((mole) => {
                             const MARKER_SIZE = 28;
                             return (
-                                <View key={mole.id} style={[styles.moleContainer, { left: mole.x - MARKER_SIZE / 2, top: mole.y - MARKER_SIZE / 2 }]} pointerEvents="box-none">
+                                <View
+                                    key={mole.id}
+                                    style={[styles.moleContainer, { left: mole.x - MARKER_SIZE / 2, top: mole.y - MARKER_SIZE / 2 }]}
+                                    pointerEvents="box-none"
+                                >
                                     <TouchableOpacity
-                                        activeOpacity={0.8} delayLongPress={500}
+                                        activeOpacity={0.8}
+                                        delayLongPress={500}
                                         style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                                        onPress={() => router.push({ pathname: '/Screensbar/Camera', params: { tapX: mole.x.toFixed(2), tapY: mole.y.toFixed(2), bodyView: mole.bodyView, moleId: mole.id, existingPhotoUri: mole.photoUri || '' } })}
-                                        onLongPress={() => Alert.alert('Delete Point', 'Are you sure?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Delete', style: 'destructive', onPress: () => deleteMole(mole.id) }])}
+                                        onPress={() => router.push({
+                                            pathname: '/Screensbar/Camera',
+                                            params: { tapX: mole.x.toFixed(2), tapY: mole.y.toFixed(2), bodyView: mole.bodyView, moleId: mole.id, existingPhotoUri: mole.photoUri || '' }
+                                        })}
+                                        onLongPress={() => Alert.alert('Delete Point', 'Are you sure?', [
+                                            { text: 'Cancel', style: 'cancel' },
+                                            { text: 'Delete', style: 'destructive', onPress: () => deleteMole(mole.id) }
+                                        ])}
                                     >
-                                        <View style={styles.moleInner}><Text style={styles.moleIcon}>+</Text></View>
-                                        {mole.photoUri && <Image source={{ uri: mole.photoUri }} style={styles.moleThumbnail} />}
+                                        <View style={styles.moleInner}>
+                                            <Text style={styles.moleIcon}>+</Text>
+                                        </View>
+                                        {mole.photoUri && (
+                                            <Image source={{ uri: mole.photoUri }} style={styles.moleThumbnail} />
+                                        )}
                                     </TouchableOpacity>
                                 </View>
                             );
@@ -335,10 +361,16 @@ export default function FirstHomePage() {
             {/* Toggle Front/Back */}
             <View style={styles.bottomControls}>
                 <View style={[styles.toggleWrapper, { backgroundColor: isDark ? '#1E2A35' : '#B8D4DE' }]}>
-                    <TouchableOpacity onPress={() => toggleBodyView('front')} style={[styles.toggleButton, bodyView === 'front' && styles.toggleButtonActive]}>
+                    <TouchableOpacity
+                        onPress={() => toggleBodyView('front')}
+                        style={[styles.toggleButton, bodyView === 'front' && styles.toggleButtonActive]}
+                    >
                         <Text style={[styles.toggleText, { color: bodyView === 'front' ? '#FFFFFF' : colors.subText }]}>Front</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => toggleBodyView('back')} style={[styles.toggleButton, bodyView === 'back' && styles.toggleButtonActive]}>
+                    <TouchableOpacity
+                        onPress={() => toggleBodyView('back')}
+                        style={[styles.toggleButton, bodyView === 'back' && styles.toggleButtonActive]}
+                    >
                         <Text style={[styles.toggleText, { color: bodyView === 'back' ? '#FFFFFF' : colors.subText }]}>Back</Text>
                     </TouchableOpacity>
                 </View>
@@ -351,10 +383,20 @@ export default function FirstHomePage() {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
-                                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
+                                <View style={[
+                                    styles.navIcon,
+                                    { backgroundColor: isDark ? '#152030' : '#F9FAFB' },
+                                    activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }
+                                ]}>
                                     <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? colors.navActive : colors.navText} />
                                 </View>
-                                <Text style={[styles.navText, { color: activeTab === tab.name ? colors.navActive : colors.navText }, activeTab === tab.name && { fontWeight: '700' }]}>{tab.name}</Text>
+                                <Text style={[
+                                    styles.navText,
+                                    { color: activeTab === tab.name ? colors.navActive : colors.navText },
+                                    activeTab === tab.name && { fontWeight: '700' }
+                                ]}>
+                                    {tab.name}
+                                </Text>
                             </TouchableOpacity>
                         );
                     })}
@@ -363,16 +405,30 @@ export default function FirstHomePage() {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
-                                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
+                                <View style={[
+                                    styles.navIcon,
+                                    { backgroundColor: isDark ? '#152030' : '#F9FAFB' },
+                                    activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }
+                                ]}>
                                     <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? colors.navActive : colors.navText} />
                                 </View>
-                                <Text style={[styles.navText, { color: activeTab === tab.name ? colors.navActive : colors.navText }, activeTab === tab.name && { fontWeight: '700' }]}>{tab.name}</Text>
+                                <Text style={[
+                                    styles.navText,
+                                    { color: activeTab === tab.name ? colors.navActive : colors.navText },
+                                    activeTab === tab.name && { fontWeight: '700' }
+                                ]}>
+                                    {tab.name}
+                                </Text>
                             </TouchableOpacity>
                         );
                     })}
                 </View>
                 <TouchableOpacity
-                    style={[styles.cameraButton, { backgroundColor: colors.navBg, borderColor: isDark ? '#374151' : '#C5E3ED' }, activeTab === 'Camera' && { borderColor: colors.navActive, backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8' }]}
+                    style={[
+                        styles.cameraButton,
+                        { backgroundColor: colors.navBg, borderColor: isDark ? '#374151' : '#C5E3ED' },
+                        activeTab === 'Camera' && { borderColor: colors.navActive, backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8' }
+                    ]}
                     onPress={() => handleTabPress('Camera')}
                     activeOpacity={0.85}
                 >
@@ -384,38 +440,38 @@ export default function FirstHomePage() {
 }
 
 const styles = StyleSheet.create({
-    container:           { flex: 1 },
-    titleContainer:      { padding: 20, marginTop: 16 },
-    title:               { fontSize: 20, textAlign: 'center' },
-    titleBold:           { fontWeight: '700' },
-    bodyMainContainer:   { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, marginBottom: 200 },
-    bodyTouchable:       { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
-    bodyImageWrapper:    { position: 'relative', width: width * 0.85, height: height * 0.55, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
-    bodyImage:           { width: '100%', height: '100%' },
-    moleContainer:       { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 4 },
-    moleInner:           { width: 28, height: 28, borderRadius: 14, backgroundColor: '#004F7F', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFFFFF' },
-    moleIcon:            { color: '#FFFFFF', fontSize: 18, fontWeight: '700', lineHeight: 22 },
-    moleThumbnail:       { width: 38, height: 38, borderRadius: 8, borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: '#ccc' },
-    bottomControls:      { position: 'absolute', bottom: 100, left: 0, right: 0, alignItems: 'center', marginBottom: 35 },
-    toggleWrapper:       { flexDirection: 'row', borderRadius: 25, padding: 4, width: width * 0.45 },
-    toggleButton:        { flex: 1, paddingVertical: 8, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
-    toggleButtonActive:  { backgroundColor: '#004F7F' },
-    toggleText:          { fontSize: 14, fontWeight: '600' },
-    bottomNavContainer:  { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center' },
-    bottomNav:           { flexDirection: 'row', paddingVertical: 10, borderTopWidth: 1, width: '100%', paddingBottom: 16 },
-    navCenterSpacer:     { flex: 1 },
-    navItem:             { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    navIcon:             { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
-    navText:             { fontSize: 11, fontWeight: '500' },
-    cameraButton:        { position: 'absolute', top: -26, alignSelf: 'center', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 6 },
-    headerCard:          { marginHorizontal: 16, marginTop: 12, marginBottom: 8, borderRadius: 20, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
-    headerContent:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    profileIconContainer:{ width: 52, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', borderWidth: 2, overflow: 'hidden' },
-    profilePhoto:        { width: 52, height: 52, borderRadius: 26 },
-    welcomeContainer:    { flex: 1, marginLeft: 12, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
-    welcomeLabel:        { fontSize: 18, fontStyle: 'italic' },
-    userName:            { fontWeight: 'bold', marginLeft: 4, marginTop: 3, fontSize: 17 },
-    notificationButton:  { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
-    notifBadge:          { position: 'absolute', top: 4, right: 4, backgroundColor: '#EF4444', borderRadius: 9, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1.5, borderColor: '#FFFFFF' },
-    notifBadgeText:      { color: '#FFFFFF', fontSize: 10, fontWeight: '800', lineHeight: 13 },
+    container:            { flex: 1 },
+    titleContainer:       { padding: 20, marginTop: 16 },
+    title:                { fontSize: 20, textAlign: 'center' },
+    titleBold:            { fontWeight: '700' },
+    bodyMainContainer:    { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, marginBottom: 200 },
+    bodyTouchable:        { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
+    bodyImageWrapper:     { position: 'relative', width: width * 0.85, height: height * 0.55, alignItems: 'center', justifyContent: 'center', overflow: 'visible' },
+    bodyImage:            { width: '100%', height: '100%' },
+    moleContainer:        { position: 'absolute', flexDirection: 'row', alignItems: 'center', gap: 4 },
+    moleInner:            { width: 28, height: 28, borderRadius: 14, backgroundColor: '#004F7F', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#FFFFFF' },
+    moleIcon:             { color: '#FFFFFF', fontSize: 18, fontWeight: '700', lineHeight: 22 },
+    moleThumbnail:        { width: 38, height: 38, borderRadius: 8, borderWidth: 2, borderColor: '#FFFFFF', backgroundColor: '#ccc' },
+    bottomControls:       { position: 'absolute', bottom: 100, left: 0, right: 0, alignItems: 'center', marginBottom: 35 },
+    toggleWrapper:        { flexDirection: 'row', borderRadius: 25, padding: 4, width: width * 0.45 },
+    toggleButton:         { flex: 1, paddingVertical: 8, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
+    toggleButtonActive:   { backgroundColor: '#004F7F' },
+    toggleText:           { fontSize: 14, fontWeight: '600' },
+    bottomNavContainer:   { position: 'absolute', bottom: 0, left: 0, right: 0, alignItems: 'center' },
+    bottomNav:            { flexDirection: 'row', paddingVertical: 10, borderTopWidth: 1, width: '100%', paddingBottom: 16 },
+    navCenterSpacer:      { flex: 1 },
+    navItem:              { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    navIcon:              { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+    navText:              { fontSize: 11, fontWeight: '500' },
+    cameraButton:         { position: 'absolute', top: -26, alignSelf: 'center', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 6 },
+    headerCard:           { marginHorizontal: 16, marginTop: 12, marginBottom: 8, borderRadius: 20, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
+    headerContent:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    profileIconContainer: { width: 52, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center', borderWidth: 2, overflow: 'hidden' },
+    profilePhoto:         { width: 52, height: 52, borderRadius: 26 },
+    welcomeContainer:     { flex: 1, marginLeft: 12, flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
+    welcomeLabel:         { fontSize: 18, fontStyle: 'italic' },
+    userName:             { fontWeight: 'bold', marginLeft: 4, marginTop: 3, fontSize: 17 },
+    notificationButton:   { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
+    notifBadge:           { position: 'absolute', top: 4, right: 4, backgroundColor: '#EF4444', borderRadius: 9, minWidth: 18, height: 18, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 4, borderWidth: 1.5, borderColor: '#FFFFFF' },
+    notifBadgeText:       { color: '#FFFFFF', fontSize: 10, fontWeight: '800', lineHeight: 13 },
 });
