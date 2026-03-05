@@ -1,14 +1,28 @@
-import { Stack } from "expo-router";
-import { CustomizeProvider } from "./Customize/Customizecontext"; // ← adjust path if needed
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Stack, router } from "expo-router";
+import { onAuthStateChanged } from "firebase/auth";
+import React, { useEffect } from "react";
+import { auth } from "../Firebase/firebaseConfig";
+import { CustomizeProvider } from "./Customize/Customizecontext";
 import { ThemeProvider } from "./ThemeContext";
-import React from "react";
 
 export default function RootLayout() {
-  return (
-    <CustomizeProvider>
-      <ThemeProvider>
-        <Stack screenOptions={{ headerShown: false }} />
-      </ThemeProvider>
-    </CustomizeProvider>
-  );
+    useEffect(() => {
+        const unsub = onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                // User is logged in — send to home, never allow StartUp/Login
+                router.replace("/Screensbar/FirstHomePage");
+            }
+            // If no user, stay on current screen (StartUp/Login/SignUp)
+        });
+        return unsub;
+    }, []);
+
+    return (
+        <CustomizeProvider>
+            <ThemeProvider>
+                <Stack screenOptions={{ headerShown: false }} />
+            </ThemeProvider>
+        </CustomizeProvider>
+    );
 }

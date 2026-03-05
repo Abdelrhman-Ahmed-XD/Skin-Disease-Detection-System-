@@ -9,12 +9,12 @@ import { useTheme } from '../ThemeContext'
 
 export default function ConfirmCP() {
   const { colors, isDark } = useTheme()
-  const { settings } = useCustomize()
+  const { settings, effectiveTextColor } = useCustomize()
   const { t, isArabic } = useTranslation(settings.language)
 
   const customText = {
     fontSize:   settings.fontSize,
-    color:      settings.textColor,
+    color:      effectiveTextColor(isDark),
     fontFamily: settings.fontFamily === 'System' ? undefined : settings.fontFamily,
   }
 
@@ -22,38 +22,38 @@ export default function ConfirmCP() {
   const pageBg = isDark ? colors.background : settings.backgroundColor
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: pageBg }}>
-      <StatusBar barStyle={colors.statusBar} backgroundColor={pageBg} />
-      <View style={{ margin: 20 }}>
-        <Pressable onPress={() => router.back()} style={[styles.backBtn, {
-          backgroundColor: colors.card,
-          borderColor: colors.border,
-        }]}>
-          <Ionicons name={isArabic ? "chevron-back" : "chevron-back"} size={28} color={colors.text} />
-        </Pressable>
+      <SafeAreaView style={{ flex: 1, backgroundColor: pageBg }}>
+        <StatusBar barStyle={colors.statusBar} backgroundColor={pageBg} />
+        <View style={{ margin: 20 }}>
+          <Pressable onPress={() => router.back()} style={[styles.backBtn, {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+          }]}>
+            <Ionicons name={isArabic ? "chevron-back" : "chevron-back"} size={28} color={colors.text} />
+          </Pressable>
 
-        <View style={{ margin: 20, justifyContent: "center", alignItems: "center" }}>
-          <Image
-            source={require("../../assets/images/checkmark.png")}
-            style={{
-              width: 250,
-              height: 250,
-              marginBottom: 5,
-              marginTop: 30,
-              tintColor: isDark ? "#22C55E" : undefined,
-            }}
-          />
-          <Text style={[customText, { fontSize: settings.fontSize > 20 ? settings.fontSize : 24, fontWeight: "bold", textAlign: "center" }]}>
-            {t('passwordChangedSuccess')}
-          </Text>
-          <TouchableOpacity onPress={() => router.push("/Settingsoptions/Editprofile")} style={{ width: "100%" }}>
-            <Text style={[styles.Continue, customText, { backgroundColor: colors.primary, color: '#fff' }]}>
-              {t('continue')}
+          <View style={{ margin: 20, justifyContent: "center", alignItems: "center" }}>
+            <Image
+                source={require("../../assets/images/checkmark.png")}
+                style={{
+                  width: 250,
+                  height: 250,
+                  marginBottom: 5,
+                  marginTop: 30,
+                  tintColor: isDark ? "#22C55E" : undefined,
+                }}
+            />
+            <Text style={[customText, { fontSize: settings.fontSize > 20 ? settings.fontSize : 24, fontWeight: "bold", textAlign: "center" }]}>
+              {t('passwordChangedSuccess')}
             </Text>
-          </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push("/Settingsoptions/Editprofile")} style={{ width: "100%" }}>
+              <Text style={[styles.Continue, customText, { backgroundColor: colors.primary, color: '#fff' }]}>
+                {t('continue')}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
   )
 }
 

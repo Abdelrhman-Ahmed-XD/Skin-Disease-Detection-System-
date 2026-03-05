@@ -1,5 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import { onAuthStateChanged } from "firebase/auth";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import { auth } from "../Firebase/firebaseConfig";
 
 type ThemeContextType = {
   isDark: boolean;
@@ -47,27 +49,42 @@ const ThemeContext = createContext<ThemeContextType>({
   colors: lightColors,
 });
 
+const themeKey = (uid: string | null) =>
+    uid ? `darkMode_${uid}` : "darkMode_guest";
+
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [isDark, setIsDark] = useState(false);
+  const uidRef = useRef<string | null>(null);
 
   useEffect(() => {
-    AsyncStorage.getItem("darkMode").then((val) => {
-      if (val === "true") setIsDark(true);
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      const uid = user?.uid ?? null;
+      uidRef.current = uid;
+      // Remove old shared key so it never bleeds between users
+      try { await AsyncStorage.removeItem("darkMode"); } catch {}
+      // Load this user's theme preference
+      try {
+        const val = await AsyncStorage.getItem(themeKey(uid));
+        setIsDark(val === "true");
+      } catch {
+        setIsDark(false);
+      }
     });
+    return unsub;
   }, []);
 
   const toggleTheme = () => {
     setIsDark((prev) => {
       const next = !prev;
-      AsyncStorage.setItem("darkMode", String(next));
+      AsyncStorage.setItem(themeKey(uidRef.current), String(next));
       return next;
     });
   };
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme, colors: isDark ? darkColors : lightColors }}>
-      {children}
-    </ThemeContext.Provider>
+      <ThemeContext.Provider value={{ isDark, toggleTheme, colors: isDark ? darkColors : lightColors }}>
+        {children}
+      </ThemeContext.Provider>
   );
 }
 
