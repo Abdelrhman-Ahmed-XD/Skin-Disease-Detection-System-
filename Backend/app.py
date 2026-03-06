@@ -28,10 +28,10 @@ def health():
     }), 200
 
 
+import os
+
 if __name__ == '__main__':
     print("\n" + "=" * 50)
     print("Flask server starting on http://0.0.0.0:5000")
-    print("Access from browser: http://localhost:5000")
-    print("Access from phone:   http://192.168.100.2:5000")
     print("=" * 50 + "\n")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true")

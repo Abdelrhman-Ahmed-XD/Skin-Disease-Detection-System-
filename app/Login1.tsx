@@ -1,18 +1,27 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Google from "expo-auth-session/providers/google";
+import * as Facebook from "expo-auth-session/providers/facebook";
+import * as WebBrowser from "expo-web-browser";
 import { router, useRouter } from "expo-router";
-import { signInWithEmailAndPassword, updatePassword } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import {
+    signInWithEmailAndPassword, updatePassword,
+    GoogleAuthProvider, FacebookAuthProvider, signInWithCredential,
+} from "firebase/auth";
+import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator, Animated, Image, InteractionManager, KeyboardAvoidingView,
-    Linking, Modal, Platform, Pressable, ScrollView,
+    Modal, Platform, Pressable, ScrollView,
     StyleSheet, Text, TextInput, TouchableOpacity, View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth, db } from "../Firebase/firebaseConfig";
 import { setIsLoggingIn } from "./_layout";
 import { loadMolesFromFirestore } from "../Firebase/firestoreService";
+
+// Required for expo-auth-session to close the browser popup after redirect
+WebBrowser.maybeCompleteAuthSession();
 
 const STORAGE_KEY  = "signupDraft";
 const TOTAL_STEPS  = 4;
@@ -44,9 +53,104 @@ export default function Login1() {
     const isFormValid = !!email && !!password && !emailError;
     const isLocked    = lockSeconds > 0;
 
-    const togglePassword  = () => setShowPassword(!showPassword);
-    const openGoogle      = () => Linking.openURL("https://accounts.google.com");
-    const openFacebook    = () => Linking.openURL("https://www.facebook.com/login/");
+    // ── Google OAuth ─────────────────────────────────────────────
+    const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
+        iosClientId:     process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+        androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+        webClientId:     process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    });
+
+    // ── Facebook OAuth ────────────────────────────────────────────
+    const [fbRequest, fbResponse, fbPromptAsync] = Facebook.useAuthRequest({
+        clientId: process.env.EXPO_PUBLIC_FACEBOOK_APP_ID,
+    });
+
+    const togglePassword = () => setShowPassword(!showPassword);
+
+    // ── Handle Google response ────────────────────────────────────
+    useEffect(() => {
+        if (googleResponse?.type === "success") {
+            const { id_token } = googleResponse.params;
+            const credential = GoogleAuthProvider.credential(id_token);
+            handleSocialLogin(credential, "google");
+        }
+    }, [googleResponse]);
+
+    // ── Handle Facebook response ──────────────────────────────────
+    useEffect(() => {
+        if (fbResponse?.type === "success") {
+            const { access_token } = fbResponse.params;
+            const credential = FacebookAuthProvider.credential(access_token);
+            handleSocialLogin(credential, "facebook");
+        }
+    }, [fbResponse]);
+
+    // ── Shared social login handler ───────────────────────────────
+    const handleSocialLogin = async (credential: any, provider: "google" | "facebook") => {
+        setIsLoggingIn(true);
+        setLoading(true);
+        await flushUI();
+        try {
+            const goToStep = async (step: number, status: string) => {
+                setLoadingStep(step);
+                setLoadingStatus(status);
+                await flushUI();
+            };
+
+            await goToStep(1, `Signing in with ${provider === "google" ? "Google" : "Facebook"}...`);
+            const userCredential = await signInWithCredential(auth, credential);
+            const user = userCredential.user;
+
+            await goToStep(2, "Loading your profile...");
+            const docRef = doc(db, "users", user.uid);
+            const docSnap = await getDoc(docRef);
+
+            if (!docSnap.exists()) {
+                // First-time social login — create profile in Firestore
+                const displayName = user.displayName || "";
+                const [firstName, ...rest] = displayName.split(" ");
+                await setDoc(docRef, {
+                    uid:        user.uid,
+                    email:      user.email,
+                    firstName:  firstName || "",
+                    lastName:   rest.join(" ") || "",
+                    photoUri:   user.photoURL || null,
+                    provider,
+                    createdAt:  serverTimestamp(),
+                });
+            }
+
+            const data = docSnap.exists() ? docSnap.data() : {};
+            await AsyncStorage.setItem("signupDraft", JSON.stringify({
+                uid:            user.uid,
+                email:          user.email,
+                firstName:      data.firstName  || user.displayName?.split(" ")[0] || "",
+                lastName:       data.lastName   || "",
+                photoUri:       data.photoUri   || user.photoURL || null,
+                isEmailVerified: true,
+            }));
+
+            await goToStep(3, "Loading your settings...");
+            if (data.customizeSettings) {
+                await AsyncStorage.setItem(`appCustomizeSettings_${user.uid}`, JSON.stringify(data.customizeSettings));
+            }
+            if (data.darkMode !== undefined) {
+                await AsyncStorage.setItem(`darkMode_${user.uid}`, String(data.darkMode));
+            }
+
+            await goToStep(4, "Loading your scans...");
+            try { await loadMolesFromFirestore(); } catch (_) {}
+
+            setIsLoggingIn(false);
+            Router.replace("/Screensbar/FirstHomePage");
+        } catch (err: any) {
+            console.log("Social login error:", err);
+            setIsLoggingIn(false);
+            setLoading(false);
+            setLoadingStep(0);
+            setLoadingStatus("");
+        }
+    };
 
     useEffect(() => {
         const emailRegex = /^\S+@\S+\.\S+$/;
@@ -336,16 +440,24 @@ export default function Login1() {
                     </View>
 
                     <View style={styles.socialContainer}>
-                        <TouchableOpacity style={styles.socialBtn} onPress={openGoogle}>
+                        <TouchableOpacity
+                            style={[styles.socialBtn, !googleRequest && { opacity: 0.5 }]}
+                            onPress={() => googlePromptAsync()}
+                            disabled={!googleRequest || loading}
+                        >
                             <Ionicons name="logo-google" size={24} color="#DB4437" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.socialBtn} onPress={openFacebook}>
+                        <TouchableOpacity
+                            style={[styles.socialBtn, !fbRequest && { opacity: 0.5 }]}
+                            onPress={() => fbPromptAsync()}
+                            disabled={!fbRequest || loading}
+                        >
                             <Ionicons name="logo-facebook" size={24} color="#1877F2" />
                         </TouchableOpacity>
                     </View>
 
                     <View style={styles.signupRow}>
-                        <Text style={styles.signupText}>Don't have an account? </Text>
+                        <Text style={styles.signupText}>Don&#39;t have an account? </Text>
                         <TouchableOpacity onPress={() => Router.push("/SignUp")}>
                             <Text style={styles.signUpText}>Sign Up</Text>
                         </TouchableOpacity>

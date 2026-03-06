@@ -5,13 +5,15 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "assets/images/logo.png",
-    "scheme": "skindisease",
+    "scheme": ["skindisease", "fb1602991657655981"],
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "skipValidateProjectName": true,
     "ios": {
       "supportsTablet": true,
-      "plugins": ["expo-router"]
+      "plugins": [
+        "expo-router"
+      ]
     },
     "android": {
       "adaptiveIcon": {
@@ -37,7 +39,19 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "expo-font"
+      "expo-font",
+      "expo-web-browser",
+      [
+        "react-native-fbsdk-next",
+        {
+          "appID": "1602991657655981",
+          "clientToken": "af57bd0099d9289acc3e436ee258472a",
+          "displayName": "SkinSight",
+          "advertiserIDCollectionEnabled": false,
+          "autoLogAppEventsEnabled": false,
+          "isAutoInitEnabled": true
+        }
+      ]
     ],
     "extra": {
       "router": {},

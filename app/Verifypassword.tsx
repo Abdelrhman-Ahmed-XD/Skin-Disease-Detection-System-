@@ -8,7 +8,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const FLASK_URL = "http://192.168.100.2:5000";
+const FLASK_URL = process.env.EXPO_PUBLIC_FLASK_URL ?? "http://192.168.100.2:5000";
 const OTP_LENGTH = 6;
 
 function generateOTP(): string {

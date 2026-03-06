@@ -4,10 +4,9 @@ import React, { useState, useEffect } from 'react'
 import { View, Pressable, StyleSheet, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../Firebase/firebaseConfig';
 
-const FLASK_URL = "http://192.168.100.2:5000";
+
+const FLASK_URL = process.env.EXPO_PUBLIC_FLASK_URL ?? "http://192.168.100.2:5000";
 
 function generateOTP(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -32,33 +31,17 @@ export default function Forgetpassword() {
         setIsLoading(true);
 
         try {
-            // Step 1: Check if email exists in Firebase
-            // We try signing in with a dummy password - if error is 'wrong-password',
-            // the account EXISTS. If error is 'user-not-found', the account does NOT exist.
-            console.log('🔍 Checking if email exists in Firebase:', email);
-            let emailExists = false;
-            try {
-                await signInWithEmailAndPassword(auth, email, '___DUMMY_PASSWORD_CHECK___');
-            } catch (firebaseError: any) {
-                const code = firebaseError.code;
-                console.log('🔍 Firebase check result:', code);
-                if (
-                    code === 'auth/wrong-password' ||
-                    code === 'auth/invalid-credential' ||
-                    code === 'auth/too-many-requests'
-                ) {
-                    // These errors mean the account EXISTS (password was just wrong)
-                    emailExists = true;
-                } else if (code === 'auth/user-not-found') {
-                    // Account does NOT exist
-                    emailExists = false;
-                } else {
-                    // Unknown error - allow through to avoid blocking legitimate users
-                    emailExists = true;
-                }
-            }
+            // Step 1: Check if email exists via Flask/Firebase Admin
+            console.log('🔍 Checking if email exists:', email);
+            const checkRes = await fetch(`${FLASK_URL}/api/check-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+            const checkData = await checkRes.json();
+            console.log('🔍 Check result:', checkData);
 
-            if (!emailExists) {
+            if (!checkData.exists) {
                 Alert.alert(
                     'Email Not Found',
                     'No account found with this email address. Please check your email or sign up.'
@@ -67,7 +50,7 @@ export default function Forgetpassword() {
                 return;
             }
 
-            console.log('✅ Email found in Firebase, sending OTP...');
+            console.log('✅ Email found, sending OTP...');
 
             // Step 2: Generate OTP
             const otp = generateOTP();

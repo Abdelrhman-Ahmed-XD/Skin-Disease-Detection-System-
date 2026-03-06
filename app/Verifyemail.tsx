@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Label } from "@react-navigation/elements";
+
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // ✅ FLASK BACKEND URL
-const FLASK_URL = "http://192.168.100.2:5000";
+const FLASK_URL = process.env.EXPO_PUBLIC_FLASK_URL ?? "http://192.168.100.2:5000";
 
 export default function Verifyemail() {
     const router = useRouter();
@@ -99,7 +99,7 @@ export default function Verifyemail() {
             console.log("❌ Error sending email:", error);
             Alert.alert(
                 "Connection Error",
-                `Cannot connect to email server.\n\nMake sure:\n1. Flask is running\n2. You're on the same network\n3. IP is 192.168.100.2:5000`
+                `Cannot connect to email server.\n\nMake sure Flask is running and try again.`
             );
         } finally {
             setIsSending(false);
@@ -238,7 +238,7 @@ export default function Verifyemail() {
                     </Text>
                 )}
 
-                <Label style={styles.label}>Enter Your Code</Label>
+                <Text style={styles.label}>Enter Your Code</Text>
                 <View style={styles.otpContainer}>
                     {[0, 1, 2, 3, 4, 5].map((_, index) => (
                         <TextInput

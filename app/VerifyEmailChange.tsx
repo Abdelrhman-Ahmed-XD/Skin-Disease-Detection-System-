@@ -11,7 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "../Firebase/firebaseConfig";
 import { saveProfileToFirestore } from "../Firebase/firestoreProfileService";
 
-const FLASK_URL   = "http://192.168.100.2:5000";
+const FLASK_URL = process.env.EXPO_PUBLIC_FLASK_URL ?? "http://192.168.100.2:5000";
 const STORAGE_KEY = "signupDraft";
 
 export default function VerifyEmailChange() {
@@ -80,7 +80,7 @@ export default function VerifyEmailChange() {
             console.log("❌ Error:", error.code, error.message);
             Alert.alert(
                 "Connection Error",
-                `Cannot connect to server.\n\nMake sure:\n1. Flask is running\n2. You're on the same network\n3. IP is 192.168.100.2:5000`
+                `Cannot connect to server.\n\nMake sure Flask is running and try again.`
             );
         } finally {
             setIsSending(false);
