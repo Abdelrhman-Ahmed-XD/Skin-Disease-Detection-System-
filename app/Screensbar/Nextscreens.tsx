@@ -17,12 +17,21 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// ── Custom Icon Images ─────────────────────────────────────────
+const Icons = {
+  home:         require('../../assets/Icons/home.png'),
+  reports:      require('../../assets/Icons/Reports.png'),
+  history:      require('../../assets/Icons/history.png'),
+  settings:     require('../../assets/Icons/setting.png'),
+  notification: require('../../assets/Icons/notification.png'),
+  person:       require('../../assets/Icons/Account person.png'),
+};
+
 const STORAGE_KEY      = 'signupDraft';
 const MOLES_STORAGE_KEY = 'savedMoles';
 
 const { width, height } = Dimensions.get('window');
 
-// ── Body hit-test ──────────────────────────────────────────────
 function inRect(nx: number, ny: number, x1: number, y1: number, x2: number, y2: number) {
     return nx >= x1 && nx <= x2 && ny >= y1 && ny <= y2;
 }
@@ -45,8 +54,6 @@ function checkBodyHit(nx: number, ny: number, view: 'front' | 'back'): boolean {
     return false;
 }
 
-// ── Onboarding steps ──────────────────────────────────────────
-// navSlot: 0=Home  1=Reports  2=Camera(center)  3=History  4=Settings
 const ONBOARDING_STEPS = [
     { id: 'home',     title: 'Home Screen', description: 'Home screen is for showing you your body and points of diseases in your back or front.', tabIcon: 'home-outline'          as const, navSlot: 0 },
     { id: 'reports',  title: 'Reports',     description: 'View detailed AI-generated reports about your skin health and mole analysis history.',    tabIcon: 'document-text-outline' as const, navSlot: 1 },
@@ -55,27 +62,21 @@ const ONBOARDING_STEPS = [
     { id: 'settings', title: 'Settings',    description: 'Manage your profile, notifications, and app preferences here.',                           tabIcon: 'settings-outline'      as const, navSlot: 4 },
 ];
 
-// ── Nav bar layout ─────────────────────────────────────────────
-// bottomNav row: [Home(flex1) | Reports(flex1) | navCenterSpacer(flex1) | History(flex1) | Settings(flex1)]
-// Camera button is position:absolute centred at width/2
-// So each of the 5 slots = width/5
 function getNavX(slot: number): number {
     const s = width / 5;
-    if (slot === 0) return s * 0 + s / 2;   // Home     → 10% of width
-    if (slot === 1) return s * 1 + s / 2;   // Reports  → 30%
-    if (slot === 2) return width / 2;        // Camera   → 50% (absolute)
-    if (slot === 3) return s * 3 + s / 2;   // History  → 70%
-    if (slot === 4) return s * 4 + s / 2;   // Settings → 90%
+    if (slot === 0) return s * 0 + s / 2;
+    if (slot === 1) return s * 1 + s / 2;
+    if (slot === 2) return width / 2;
+    if (slot === 3) return s * 3 + s / 2;
+    if (slot === 4) return s * 4 + s / 2;
     return width / 2;
 }
 
 const NAV_BAR_HEIGHT = 55;
 
-// ── Types ──────────────────────────────────────────────────────
 type Mole     = { id: string; x: number; y: number; timestamp: number; photoUri?: string; bodyView: 'front' | 'back'; };
 type BodyView = 'front' | 'back';
 
-// ══════════════════════════════════════════════════════════════
 export default function Nextscreens() {
     const router = useRouter();
     const [userName,   setUserName]   = useState('');
@@ -83,7 +84,6 @@ export default function Nextscreens() {
     const [moles,      setMoles]      = useState<Mole[]>([]);
     const [activeTab,  setActiveTab]  = useState<string>('Home');
 
-    // ── Onboarding ─────────────────────────────────────────────
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [onboardingStep, setOnboardingStep] = useState(0);
     const fadeAnim     = useRef(new Animated.Value(0)).current;
@@ -93,7 +93,6 @@ export default function Nextscreens() {
 
     useEffect(() => { bodyViewRef.current = bodyView; }, [bodyView]);
 
-    // ── Zoom & Pan refs ────────────────────────────────────────
     const scale        = useRef(new Animated.Value(1)).current;
     const translateX   = useRef(new Animated.Value(0)).current;
     const translateY   = useRef(new Animated.Value(0)).current;
@@ -190,7 +189,6 @@ export default function Nextscreens() {
         },
     })).current;
 
-    // ── Load username ──────────────────────────────────────────
     useEffect(() => {
         AsyncStorage.getItem(STORAGE_KEY).then(saved => {
             if (saved) {
@@ -200,7 +198,6 @@ export default function Nextscreens() {
         }).catch(() => {});
     }, []);
 
-    // ── Load moles from Firestore on mount ─────────────────────
     useEffect(() => {
         const loadMoles = async () => {
             try {
@@ -213,7 +210,6 @@ export default function Nextscreens() {
         loadMoles();
     }, []);
 
-    // ── START onboarding every time screen is focused ──────────
     useFocusEffect(
         React.useCallback(() => {
             setActiveTab('Home');
@@ -224,7 +220,6 @@ export default function Nextscreens() {
                 animateIn();
             }, 350);
 
-            // Reload moles from Firestore every time we return to this screen
             loadMolesFromFirestore()
                 .then(data => setMoles(data))
                 .catch(err => console.log('Focus reload moles error:', err));
@@ -233,8 +228,6 @@ export default function Nextscreens() {
         }, [])
     );
 
-
-    // ── Onboarding animation helpers ───────────────────────────
     const animateIn = () => {
         fadeAnim.setValue(0);
         scaleTooltip.setValue(0.85);
@@ -244,7 +237,6 @@ export default function Nextscreens() {
         ]).start();
     };
 
-    // Pulse spotlight ring on each step
     useEffect(() => {
         pulseLoop.current?.stop();
         if (!showOnboarding) return;
@@ -274,14 +266,13 @@ export default function Nextscreens() {
         router.push('/Screensbar/FirstHomePage');
     };
 
-    // ── Mole helpers ───────────────────────────────────────────
     const currentMoles = moles.filter(m => m.bodyView === bodyView);
 
     const deleteMole = async (id: string) => {
         const updated = moles.filter(m => m.id !== id);
         setMoles(updated);
         try {
-            await deleteMoleFromFirestore(id); // deletes from Firestore + AsyncStorage
+            await deleteMoleFromFirestore(id);
         } catch (err) {
             console.log('Delete mole error:', err);
             await AsyncStorage.setItem(MOLES_STORAGE_KEY, JSON.stringify(updated));
@@ -299,11 +290,10 @@ export default function Nextscreens() {
     };
 
     const bottomTabs = [
-        { name: 'Home',     icon: 'home-outline'          },
-        { name: 'Reports',  icon: 'document-text-outline' },
-        { name: 'History',  icon: 'time-outline'          },
-        { name: 'Settings', icon: 'settings-outline'      },
-        { name: 'Camera',   icon: 'camera-outline'        },
+        { name: 'Home',     iconImg: Icons.home     },
+        { name: 'Reports',  iconImg: Icons.reports  },
+        { name: 'History',  iconImg: Icons.history  },
+        { name: 'Settings', iconImg: Icons.settings },
     ];
 
     const handleTabPress = (tabName: string) => {
@@ -316,32 +306,23 @@ export default function Nextscreens() {
         }
     };
 
-    // ── Onboarding overlay ─────────────────────────────────────
     const renderOnboarding = () => {
         if (!showOnboarding) return null;
 
         const step   = ONBOARDING_STEPS[onboardingStep];
         const isLast = onboardingStep === ONBOARDING_STEPS.length - 1;
         const navX   = getNavX(step.navSlot);
-
-        // Spotlight Y: camera button floats above the bar
         const spotY = height - NAV_BAR_HEIGHT + (step.navSlot === 2 ? -30 : 6);
 
-        // Tooltip box — keep inside screen horizontally
         const TW     = 210;
         let   tLeft  = navX - TW / 2;
         tLeft = Math.max(12, Math.min(width - TW - 12, tLeft));
         const tBottom = NAV_BAR_HEIGHT + 50;
-
-        // Arrow tip aligns with navX
         const arrowLeft = Math.max(14, Math.min(TW - 34, navX - tLeft - 14));
 
         return (
             <View style={[StyleSheet.absoluteFill, ob.root]} pointerEvents="box-none">
-                {/* Dark overlay */}
                 <View style={[StyleSheet.absoluteFill, ob.overlay]} pointerEvents="none" />
-
-                {/* Pulsing spotlight ring */}
                 <Animated.View
                     pointerEvents="none"
                     style={[ob.spotlight, {
@@ -350,8 +331,6 @@ export default function Nextscreens() {
                         transform: [{ scale: pulseAnim }],
                     }]}
                 />
-
-                {/* Tooltip card */}
                 <Animated.View style={[ob.tooltipWrapper, {
                     bottom: tBottom,
                     left:   tLeft,
@@ -360,7 +339,6 @@ export default function Nextscreens() {
                     transform: [{ scale: scaleTooltip }],
                 }]}>
                     <View style={ob.tooltip}>
-                        {/* Header: icon · title · Next */}
                         <View style={ob.header}>
                             <View style={ob.iconCircle}>
                                 <Ionicons name={step.tabIcon} size={15} color="#004F7F" />
@@ -371,11 +349,7 @@ export default function Nextscreens() {
                                 {!isLast && <Ionicons name="arrow-forward" size={12} color="#fff" />}
                             </TouchableOpacity>
                         </View>
-
-                        {/* Description */}
                         <Text style={ob.desc}>{step.description}</Text>
-
-                        {/* Footer: dots · skip */}
                         <View style={ob.footer}>
                             <View style={ob.dots}>
                                 {ONBOARDING_STEPS.map((_, i) => (
@@ -391,15 +365,12 @@ export default function Nextscreens() {
                             </TouchableOpacity>
                         </View>
                     </View>
-
-                    {/* Down-pointing arrow */}
                     <View style={[ob.arrow, { left: arrowLeft }]} />
                 </Animated.View>
             </View>
         );
     };
 
-    // ══════════════════════════════════════════════════════════
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             <StatusBar barStyle="dark-content" backgroundColor="#D8E9F0" />
@@ -408,14 +379,16 @@ export default function Nextscreens() {
             <View style={styles.headerCard}>
                 <View style={styles.headerContent}>
                     <TouchableOpacity style={styles.profileIconContainer}>
-                        <Ionicons name="person-outline" size={32} color="#004F7F" />
+                        {/* ── Custom person icon ── */}
+                        <Image source={Icons.person} style={styles.headerIconImg} resizeMode="contain" />
                     </TouchableOpacity>
                     <View style={styles.welcomeContainer}>
                         <Text style={styles.welcomeLabel}>Welcome,</Text>
                         <Text style={{ fontWeight: 'bold', marginLeft: 4, marginTop: 3, fontSize: 17 }}>{userName}</Text>
                     </View>
                     <TouchableOpacity style={styles.notificationButton}>
-                        <Ionicons name="notifications-outline" size={28} color="#00A3A3" />
+                        {/* ── Custom notification icon ── */}
+                        <Image source={Icons.notification} style={styles.notifIconImg} resizeMode="contain" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -477,24 +450,34 @@ export default function Nextscreens() {
                 <View style={styles.bottomNav}>
                     {['Home', 'Reports'].map(tabName => {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
+                        const isActive = activeTab === tab.name;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
-                                <View style={[styles.navIcon, activeTab === tab.name && styles.navIconActive]}>
-                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? '#004F7F' : '#6B7280'} />
+                                <View style={[styles.navIcon, isActive && styles.navIconActive]}>
+                                    <Image
+                                        source={tab.iconImg}
+                                        style={styles.navIconImg}
+                                        resizeMode="contain"
+                                    />
                                 </View>
-                                <Text style={[styles.navText, activeTab === tab.name && styles.navTextActive]}>{tab.name}</Text>
+                                <Text style={[styles.navText, isActive && styles.navTextActive]}>{tab.name}</Text>
                             </TouchableOpacity>
                         );
                     })}
                     <View style={styles.navCenterSpacer} />
                     {['History', 'Settings'].map(tabName => {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
+                        const isActive = activeTab === tab.name;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
-                                <View style={[styles.navIcon, activeTab === tab.name && styles.navIconActive]}>
-                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? '#004F7F' : '#6B7280'} />
+                                <View style={[styles.navIcon, isActive && styles.navIconActive]}>
+                                    <Image
+                                        source={tab.iconImg}
+                                        style={styles.navIconImg}
+                                        resizeMode="contain"
+                                    />
                                 </View>
-                                <Text style={[styles.navText, activeTab === tab.name && styles.navTextActive]}>{tab.name}</Text>
+                                <Text style={[styles.navText, isActive && styles.navTextActive]}>{tab.name}</Text>
                             </TouchableOpacity>
                         );
                     })}
@@ -508,14 +491,12 @@ export default function Nextscreens() {
                 </TouchableOpacity>
             </View>
 
-            {/* Onboarding overlay — always last so it's on top */}
             {renderOnboarding()}
 
         </SafeAreaView>
     );
 }
 
-// ── Onboarding styles ──────────────────────────────────────────
 const ob = StyleSheet.create({
     root:    { zIndex: 9999, elevation: 9999 },
     overlay: { backgroundColor: 'rgba(0,10,20,0.60)', zIndex: 1 },
@@ -552,7 +533,6 @@ const ob = StyleSheet.create({
     },
 });
 
-// ── Screen styles ──────────────────────────────────────────────
 const styles = StyleSheet.create({
     container:            { flex: 1, backgroundColor: '#D8E9F0' },
     titleContainer:       { padding: 20, marginTop: 16 },
@@ -578,6 +558,9 @@ const styles = StyleSheet.create({
     navItem:              { flex: 1, alignItems: 'center', justifyContent: 'center' },
     navIcon:              { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F9FAFB', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
     navIconActive:        { backgroundColor: '#E8F4F8', borderWidth: 2, borderColor: '#C5E3ED' },
+    navIconImg:           { width: 34, height: 34 },
+    headerIconImg:        { width: 40, height: 40 },
+    notifIconImg:         { width: 36, height: 36 },
     navText:              { fontSize: 11, color: '#6B7280', fontWeight: '500' },
     navTextActive:        { fontSize: 11, color: '#004F7F', fontWeight: '700' },
     cameraButton: {

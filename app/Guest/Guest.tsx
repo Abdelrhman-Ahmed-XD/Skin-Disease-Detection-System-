@@ -18,6 +18,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 const MOLES_STORAGE_KEY = 'savedMoles';
 const { width, height } = Dimensions.get('window');
 
+// ── Custom Icon Images ─────────────────────────────────────────
+const Icons = {
+  home:         require('../../assets/Icons/home.png'),
+  reports:      require('../../assets/Icons/Reports.png'),
+  history:      require('../../assets/Icons/history.png'),
+  settings:     require('../../assets/Icons/setting.png'),
+  notification: require('../../assets/Icons/notification.png'),
+  person:       require('../../assets/Icons/Account person.png'),
+};
+
 // ── Body hit-test ──────────────────────────────────────────────
 function inRect(nx: number, ny: number, x1: number, y1: number, x2: number, y2: number) {
     return nx >= x1 && nx <= x2 && ny >= y1 && ny <= y2;
@@ -41,7 +51,7 @@ function checkBodyHit(nx: number, ny: number): boolean {
     return false;
 }
 
-// ── Onboarding steps (exact same as Nextscreens) ───────────────
+// ── Onboarding steps ───────────────────────────────────────────
 const ONBOARDING_STEPS = [
     { id: 'home',     title: 'Home Screen', description: 'Home screen is for showing you your body and points of diseases in your back or front.', tabIcon: 'home-outline'          as const, navSlot: 0 },
     { id: 'reports',  title: 'Reports',     description: 'View detailed AI-generated reports about your skin health and mole analysis history.',    tabIcon: 'document-text-outline' as const, navSlot: 1 },
@@ -252,7 +262,6 @@ export default function Guest() {
         ]).start();
     };
 
-    // Keep ref in sync so panResponder can call it
     useEffect(() => { openCameraModalRef.current = openCameraModal; });
 
     const closeCameraModal = () => setShowCameraModal(false);
@@ -265,7 +274,6 @@ export default function Guest() {
         } else {
             openOnboarding(tabName);
         }
-        // No navigation for guests at all
     };
 
     // ── Mole helpers ───────────────────────────────────────────
@@ -282,14 +290,13 @@ export default function Guest() {
     };
 
     const bottomTabs = [
-        { name: 'Home',     icon: 'home-outline'          },
-        { name: 'Reports',  icon: 'document-text-outline' },
-        { name: 'History',  icon: 'time-outline'          },
-        { name: 'Settings', icon: 'settings-outline'      },
-        { name: 'Camera',   icon: 'camera-outline'        },
+        { name: 'Home',     iconImg: Icons.home     },
+        { name: 'Reports',  iconImg: Icons.reports  },
+        { name: 'History',  iconImg: Icons.history  },
+        { name: 'Settings', iconImg: Icons.settings },
     ];
 
-    // ── Render onboarding (exact same UI as Nextscreens) ───────
+    // ── Render onboarding ──────────────────────────────────────
     const renderOnboarding = () => {
         if (!showOnboarding) return null;
 
@@ -367,7 +374,6 @@ export default function Guest() {
                     activeOpacity={1}
                     onPress={closeCameraModal}
                 />
-                {/* Spotlight on camera button */}
                 <Animated.View
                     pointerEvents="none"
                     style={[ob.spotlight, {
@@ -376,13 +382,11 @@ export default function Guest() {
                         transform: [{ scale: pulseAnim }],
                     }]}
                 />
-                {/* Modal card — centered on screen */}
                 <Animated.View style={[ob.cameraModalWrapper, {
                     opacity: cameraFade,
                     transform: [{ scale: cameraScale }],
                 }]}>
                     <View style={ob.tooltip}>
-                        {/* Header */}
                         <View style={ob.header}>
                             <View style={ob.iconCircle}>
                                 <Ionicons name="camera-outline" size={15} color="#004F7F" />
@@ -392,13 +396,9 @@ export default function Guest() {
                                 <Ionicons name="close" size={14} color="#fff" />
                             </TouchableOpacity>
                         </View>
-
-                        {/* Message */}
                         <Text style={ob.desc}>
                             To take photos and analyze your skin, you need to create an account or log in first.
                         </Text>
-
-                        {/* Action buttons */}
                         <View style={ob.cameraActions}>
                             <TouchableOpacity
                                 style={ob.signUpBtn}
@@ -408,7 +408,6 @@ export default function Guest() {
                                 <Ionicons name="person-add-outline" size={14} color="#fff" />
                                 <Text style={ob.signUpBtnText}>Create Account</Text>
                             </TouchableOpacity>
-
                             <TouchableOpacity
                                 style={ob.loginBtn}
                                 activeOpacity={0.85}
@@ -433,14 +432,16 @@ export default function Guest() {
             <View style={styles.headerCard}>
                 <View style={styles.headerContent}>
                     <TouchableOpacity style={styles.profileIconContainer}>
-                        <Ionicons name="person-outline" size={32} color="#004F7F" />
+                        {/* ── Custom person icon ── */}
+                        <Image source={Icons.person} style={styles.navIconImg} resizeMode="contain" />
                     </TouchableOpacity>
                     <View style={styles.welcomeContainer}>
                         <Text style={styles.welcomeLabel}>Welcome,</Text>
                         <Text style={{ fontWeight: 'bold', marginLeft: 4, marginTop: 3, fontSize: 17 }}>{userName}</Text>
                     </View>
                     <TouchableOpacity style={styles.notificationButton}>
-                        <Ionicons name="notifications-outline" size={28} color="#00A3A3" />
+                        {/* ── Custom notification icon ── */}
+                        <Image source={Icons.notification} style={styles.notifIconImg} resizeMode="contain" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -497,28 +498,39 @@ export default function Guest() {
                 <View style={styles.bottomNav}>
                     {['Home', 'Reports'].map(tabName => {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
+                        const isActive = activeTab === tab.name;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
-                                <View style={[styles.navIcon, activeTab === tab.name && styles.navIconActive]}>
-                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? '#004F7F' : '#6B7280'} />
+                                <View style={[styles.navIcon, isActive && styles.navIconActive]}>
+                                    <Image
+                                        source={tab.iconImg}
+                                        style={styles.navIconImg}
+                                        resizeMode="contain"
+                                    />
                                 </View>
-                                <Text style={[styles.navText, activeTab === tab.name && styles.navTextActive]}>{tab.name}</Text>
+                                <Text style={[styles.navText, isActive && styles.navTextActive]}>{tab.name}</Text>
                             </TouchableOpacity>
                         );
                     })}
                     <View style={styles.navCenterSpacer} />
                     {['History', 'Settings'].map(tabName => {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
+                        const isActive = activeTab === tab.name;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
-                                <View style={[styles.navIcon, activeTab === tab.name && styles.navIconActive]}>
-                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? '#004F7F' : '#6B7280'} />
+                                <View style={[styles.navIcon, isActive && styles.navIconActive]}>
+                                    <Image
+                                        source={tab.iconImg}
+                                        style={styles.navIconImg}
+                                        resizeMode="contain"
+                                    />
                                 </View>
-                                <Text style={[styles.navText, activeTab === tab.name && styles.navTextActive]}>{tab.name}</Text>
+                                <Text style={[styles.navText, isActive && styles.navTextActive]}>{tab.name}</Text>
                             </TouchableOpacity>
                         );
                     })}
                 </View>
+                {/* Camera center button — keep Ionicons since no camera.png provided */}
                 <TouchableOpacity
                     style={[styles.cameraButton, activeTab === 'Camera' && styles.cameraButtonActive]}
                     onPress={() => handleTabPress('Camera')}
@@ -528,7 +540,6 @@ export default function Guest() {
                 </TouchableOpacity>
             </View>
 
-            {/* Overlays — always last so on top */}
             {renderOnboarding()}
             {renderCameraModal()}
 
@@ -610,6 +621,8 @@ const styles = StyleSheet.create({
     navItem:              { flex: 1, alignItems: 'center', justifyContent: 'center' },
     navIcon:              { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F9FAFB', justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
     navIconActive:        { backgroundColor: '#E8F4F8', borderWidth: 2, borderColor: '#C5E3ED' },
+    navIconImg:           { width: 34, height: 34 },
+    notifIconImg:         { width: 36, height: 36 },
     navText:              { fontSize: 11, color: '#6B7280', fontWeight: '500' },
     navTextActive:        { fontSize: 11, color: '#004F7F', fontWeight: '700' },
     cameraButton: {

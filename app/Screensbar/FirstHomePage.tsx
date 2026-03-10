@@ -26,6 +26,16 @@ import {
 } from '../Screensbar/notificationsData';
 import { useTheme } from '../ThemeContext';
 
+// ── Custom Icon Images ─────────────────────────────────────────
+const Icons = {
+  home:         require('../../assets/Icons/home.png'),
+  reports:      require('../../assets/Icons/Reports.png'),
+  history:      require('../../assets/Icons/history.png'),
+  settings:     require('../../assets/Icons/setting.png'),
+  notification: require('../../assets/Icons/notification.png'),
+  person:       require('../../assets/Icons/Account person.png'),
+};
+
 const STORAGE_KEY       = 'signupDraft';
 const MOLES_STORAGE_KEY = 'savedMoles';
 const { width, height } = Dimensions.get('window');
@@ -61,7 +71,6 @@ export default function FirstHomePage() {
     const { settings } = useCustomize();
     const { t, isArabic } = useTranslation(settings.language);
 
-    // ✅ Dancing Script font
     const [fontsLoaded] = useFonts({ DancingScript_700Bold });
 
     const customText = {
@@ -70,7 +79,6 @@ export default function FirstHomePage() {
         fontFamily: settings.fontFamily === 'System' ? undefined : settings.fontFamily,
     };
 
-    // ✅ background من settings في light mode
     const pageBg = isDark ? colors.background : settings.backgroundColor;
 
     const [userName, setUserName]   = useState('');
@@ -261,11 +269,10 @@ export default function FirstHomePage() {
     };
 
     const bottomTabs = [
-        { name: 'Home',     icon: 'home-outline' },
-        { name: 'Reports',  icon: 'document-text-outline' },
-        { name: 'History',  icon: 'time-outline' },
-        { name: 'Settings', icon: 'settings-outline' },
-        { name: 'Camera',   icon: 'camera-outline' },
+        { name: 'Home',     iconImg: Icons.home     },
+        { name: 'Reports',  iconImg: Icons.reports  },
+        { name: 'History',  iconImg: Icons.history  },
+        { name: 'Settings', iconImg: Icons.settings },
     ];
 
     const handleTabPress = (tabName: string) => {
@@ -292,7 +299,8 @@ export default function FirstHomePage() {
                         {photoUri ? (
                             <Image source={{ uri: photoUri }} style={styles.profilePhoto} resizeMode="cover" />
                         ) : (
-                            <Ionicons name="person-outline" size={32} color={colors.primary} />
+                            // ── Custom person icon ──
+                            <Image source={Icons.person} style={styles.headerIconImg} resizeMode="contain" />
                         )}
                     </TouchableOpacity>
 
@@ -322,10 +330,11 @@ export default function FirstHomePage() {
                         style={[styles.notificationButton, { backgroundColor: isDark ? '#1E2A35' : '#F9FAFB' }]}
                         onPress={() => router.push('/Screensbar/Notifications')}
                     >
-                        <Ionicons
-                            name={notificationsEnabled ? 'notifications-outline' : 'notifications-off-outline'}
-                            size={28}
-                            color={notificationsEnabled ? colors.accent : colors.subText}
+                        {/* ── Custom notification icon ── */}
+                        <Image
+                            source={Icons.notification}
+                            style={styles.notifIconImg}
+                            resizeMode="contain"
                         />
                         {notificationsEnabled && unreadCount > 0 && (
                             <View style={styles.notifBadge}>
@@ -387,10 +396,7 @@ export default function FirstHomePage() {
                                             { text: 'Delete', style: 'destructive', onPress: () => deleteMole(mole.id) }
                                         ])}
                                     >
-                                        <View style={[styles.moleContainer, {
-                                            left: -(MARKER_SIZE / 2),
-                                            top: -(MARKER_SIZE / 2),
-                                        }]}>
+                                        <View style={[styles.moleContainer, { left: -(MARKER_SIZE / 2), top: -(MARKER_SIZE / 2) }]}>
                                             <View style={styles.moleInner}>
                                                 <Text style={styles.moleIcon}>+</Text>
                                             </View>
@@ -409,18 +415,12 @@ export default function FirstHomePage() {
             {/* Toggle Front/Back */}
             <View style={styles.bottomControls}>
                 <View style={[styles.toggleWrapper, { backgroundColor: isDark ? '#1E2A35' : '#B8D4DE' }]}>
-                    <TouchableOpacity
-                        onPress={() => toggleBodyView('front')}
-                        style={[styles.toggleButton, bodyView === 'front' && styles.toggleButtonActive]}
-                    >
+                    <TouchableOpacity onPress={() => toggleBodyView('front')} style={[styles.toggleButton, bodyView === 'front' && styles.toggleButtonActive]}>
                         <Text style={[styles.toggleText, { color: bodyView === 'front' ? '#FFFFFF' : colors.subText }]}>
                             {isArabic ? 'أمامي' : 'Front'}
                         </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => toggleBodyView('back')}
-                        style={[styles.toggleButton, bodyView === 'back' && styles.toggleButtonActive]}
-                    >
+                    <TouchableOpacity onPress={() => toggleBodyView('back')} style={[styles.toggleButton, bodyView === 'back' && styles.toggleButtonActive]}>
                         <Text style={[styles.toggleText, { color: bodyView === 'back' ? '#FFFFFF' : colors.subText }]}>
                             {isArabic ? 'خلفي' : 'Back'}
                         </Text>
@@ -433,20 +433,21 @@ export default function FirstHomePage() {
                 <View style={[styles.bottomNav, { backgroundColor: colors.navBg, borderTopColor: colors.border }]}>
                     {['Home', 'Reports'].map((tabName) => {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
+                        const isActive = activeTab === tab.name;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
                                 <View style={[
                                     styles.navIcon,
                                     { backgroundColor: isDark ? '#152030' : '#F9FAFB' },
-                                    activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }
+                                    isActive && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }
                                 ]}>
-                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? colors.navActive : colors.navText} />
+                                    <Image
+                                        source={tab.iconImg}
+                                        style={styles.navIconImg}
+                                        resizeMode="contain"
+                                    />
                                 </View>
-                                <Text style={[
-                                    styles.navText,
-                                    { color: activeTab === tab.name ? colors.navActive : colors.navText },
-                                    activeTab === tab.name && { fontWeight: '700' }
-                                ]}>
+                                <Text style={[styles.navText, { color: isActive ? colors.navActive : colors.navText }, isActive && { fontWeight: '700' }]}>
                                     {tab.name}
                                 </Text>
                             </TouchableOpacity>
@@ -455,20 +456,21 @@ export default function FirstHomePage() {
                     <View style={styles.navCenterSpacer} />
                     {['History', 'Settings'].map((tabName) => {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
+                        const isActive = activeTab === tab.name;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
                                 <View style={[
                                     styles.navIcon,
                                     { backgroundColor: isDark ? '#152030' : '#F9FAFB' },
-                                    activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }
+                                    isActive && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }
                                 ]}>
-                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? colors.navActive : colors.navText} />
+                                    <Image
+                                        source={tab.iconImg}
+                                        style={styles.navIconImg}
+                                        resizeMode="contain"
+                                    />
                                 </View>
-                                <Text style={[
-                                    styles.navText,
-                                    { color: activeTab === tab.name ? colors.navActive : colors.navText },
-                                    activeTab === tab.name && { fontWeight: '700' }
-                                ]}>
+                                <Text style={[styles.navText, { color: isActive ? colors.navActive : colors.navText }, isActive && { fontWeight: '700' }]}>
                                     {tab.name}
                                 </Text>
                             </TouchableOpacity>
@@ -514,6 +516,9 @@ const styles = StyleSheet.create({
     navCenterSpacer:      { flex: 1 },
     navItem:              { flex: 1, alignItems: 'center', justifyContent: 'center' },
     navIcon:              { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+    navIconImg:           { width: 34, height: 34 },
+    headerIconImg:        { width: 40, height: 40 },
+    notifIconImg:         { width: 36, height: 36 },
     navText:              { fontSize: 11, fontWeight: '500' },
     cameraButton:         { position: 'absolute', top: -26, alignSelf: 'center', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 6 },
     headerCard:           { marginHorizontal: 16, marginTop: 12, marginBottom: 8, borderRadius: 20, paddingVertical: 14, paddingHorizontal: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },

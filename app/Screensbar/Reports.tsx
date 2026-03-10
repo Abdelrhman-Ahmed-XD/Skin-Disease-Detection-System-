@@ -15,6 +15,14 @@ import { useTranslation } from '../Customize/translations';
 import { useTheme } from '../ThemeContext';
 import { loadMolesFromFirestore } from '../../Firebase/firestoreService';
 
+// ── Custom Icon Images ─────────────────────────────────────────
+const Icons = {
+  home:     require('../../assets/Icons/home.png'),
+  reports:  require('../../assets/Icons/Reports.png'),
+  history:  require('../../assets/Icons/history.png'),
+  settings: require('../../assets/Icons/setting.png'),
+};
+
 const { width } = Dimensions.get('window');
 
 type Mole = {
@@ -22,11 +30,9 @@ type Mole = {
     photoUri?: string; bodyView: 'front' | 'back'; analysis?: string;
 };
 
-
 const getImageBase64 = async (uri: string): Promise<string> => {
     try {
         if (!uri) return '';
-        // Cloudinary / remote URLs — fetch and convert to base64 for PDF embedding
         if (uri.startsWith('http://') || uri.startsWith('https://')) {
             try {
                 const downloadRes = await FileSystem.downloadAsync(
@@ -38,10 +44,9 @@ const getImageBase64 = async (uri: string): Promise<string> => {
                 });
                 return `data:image/jpeg;base64,${base64}`;
             } catch {
-                return uri; // fallback to URL if download fails
+                return uri;
             }
         }
-        // Local file
         const base64 = await FileSystem.readAsStringAsync(uri, {
             encoding: FileSystem.EncodingType.Base64,
         });
@@ -54,36 +59,12 @@ const getImageBase64 = async (uri: string): Promise<string> => {
     }
 };
 
-
-const skinColorLabel = (hex: string | null) => {
-    const map: Record<string, string> = {
-        '#F5E0D3': 'Very Light', '#EACAA7': 'Light',
-        '#D1A67A': 'Medium',     '#B57D50': 'Tan',
-        '#A05C38': 'Brown',      '#8B4513': 'Dark Brown',
-        '#7A3E11': 'Deep',       '#603311': 'Ebony',
-    };
-    return hex ? (map[hex] || hex) : 'N/A';
-};
-
-
 const buildReportHTML = (params: {
-    reportIndex: number;
-    date: string;
-    bodyView: string;
-    x: number;
-    y: number;
-    moleId: string;
-    analysis: string;
-    imageBase64: string;
-    frontBody: string;
-    backBody: string;
-    // User profile
-    patientName: string;
-    age: string;
-    gender: string;
-    hairColor: string;
-    eyeColor: string;
-    skinColor: string;
+    reportIndex: number; date: string; bodyView: string;
+    x: number; y: number; moleId: string; analysis: string;
+    imageBase64: string; frontBody: string; backBody: string;
+    patientName: string; age: string; gender: string;
+    hairColor: string; eyeColor: string; skinColor: string;
 }) => `
 <!DOCTYPE html>
 <html>
@@ -94,55 +75,37 @@ const buildReportHTML = (params: {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Georgia, 'Times New Roman', serif; background: #D8E9F0; padding: 30px 20px; }
     .page { max-width: 700px; margin: 0 auto; background: #D8E9F0; border-radius: 16px; overflow: hidden; }
-
-    /* Header */
     .header { background: #004F7F; padding: 36px 24px 28px; text-align: center; }
     .brand { font-size: 48px; font-weight: bold; color: #ffffff; letter-spacing: 2px; line-height: 1.2; }
     .brand-s { color: #00A3A3; font-size: 56px; }
     .tagline { color: #C5E3ED; font-size: 13px; margin-top: 6px; font-style: italic; letter-spacing: 3px; }
     .header-divider { width: 60px; height: 3px; background: #00A3A3; margin: 14px auto 0; border-radius: 10px; }
-
-    /* Banner */
     .banner { background: #00A3A3; padding: 10px 20px; text-align: center; }
     .banner p { color: #fff; font-size: 13px; font-style: italic; letter-spacing: 0.5px; }
-
-    /* Report title bar */
     .report-title-bar { background: #ffffff; border-left: 1px solid #C5E3ED; border-right: 1px solid #C5E3ED; padding: 20px 24px 16px; display: flex; justify-content: space-between; align-items: center; }
     .report-num { font-size: 22px; font-weight: bold; color: #004F7F; }
     .report-date { font-size: 13px; color: #6B7280; font-family: system-ui, sans-serif; }
-
-    /* Patient info */
     .patient-section { background: #ffffff; border-left: 1px solid #C5E3ED; border-right: 1px solid #C5E3ED; padding: 16px 24px; border-top: 1px solid #E5F0F6; }
     .patient-title { font-size: 14px; font-weight: bold; color: #004F7F; margin-bottom: 12px; font-family: system-ui, sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
     .patient-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
     .patient-item { background: #F4FBFF; border-radius: 8px; padding: 10px 12px; border: 1px solid #C5E3ED; }
     .patient-label { font-size: 10px; color: #9CA3AF; font-family: system-ui, sans-serif; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.5px; }
     .patient-value { font-size: 13px; font-weight: bold; color: #1F2937; font-family: system-ui, sans-serif; }
-
-    /* Image */
     .image-section { background: #ffffff; border-left: 1px solid #C5E3ED; border-right: 1px solid #C5E3ED; padding: 0 24px 20px; text-align: center; }
     .image-section img { max-width: 100%; max-height: 320px; border-radius: 12px; border: 3px solid #C5E3ED; object-fit: cover; }
-
-    /* Info grid */
     .info-section { background: #ffffff; border-left: 1px solid #C5E3ED; border-right: 1px solid #C5E3ED; padding: 0 24px 20px; }
     .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 4px; }
     .info-item { background: #F4FBFF; border-radius: 10px; padding: 12px; border: 1px solid #C5E3ED; }
     .info-label { font-size: 11px; color: #9CA3AF; font-family: system-ui, sans-serif; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
     .info-value { font-size: 14px; font-weight: bold; color: #004F7F; font-family: system-ui, sans-serif; }
-
-    /* Analysis */
     .analysis-section { background: #ffffff; border-left: 1px solid #C5E3ED; border-right: 1px solid #C5E3ED; padding: 20px 24px; }
     .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #E5E7EB; }
     .section-title { font-size: 17px; font-weight: bold; color: #004F7F; }
     .analysis-box { background: #D8E9F0; border-radius: 12px; padding: 18px 20px; border: 1px solid #C5E3ED; }
     .analysis-text { font-size: 14px; color: #374151; line-height: 1.8; font-family: system-ui, sans-serif; }
-
-    /* Warning */
     .warning-section { background: #ffffff; border-left: 1px solid #C5E3ED; border-right: 1px solid #C5E3ED; padding: 0 24px 20px; }
     .warning-box { background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 8px; padding: 14px 16px; }
     .warning-text { font-size: 12px; color: #856404; line-height: 1.6; font-family: system-ui, sans-serif; }
-
-    /* Footer */
     .footer { background: #004F7F; padding: 28px 20px; text-align: center; }
     .footer-divider { width: 40px; height: 2px; background: #00A3A3; margin: 0 auto 18px; border-radius: 10px; }
     .footer-brand { font-size: 20px; font-weight: bold; color: #fff; margin-bottom: 6px; }
@@ -153,114 +116,56 @@ const buildReportHTML = (params: {
 </head>
 <body>
   <div class="page">
-
-    <!-- Header -->
     <div class="header">
       <div class="brand"><span class="brand-s">S</span>kinsight</div>
       <div class="tagline">Snap. Detect. Protect.</div>
       <div class="header-divider"></div>
     </div>
-
-    <!-- Banner -->
     <div class="banner"><p>Skin Analysis Report</p></div>
-
-    <!-- Report Title Bar -->
     <div class="report-title-bar">
       <div class="report-num">Report #${params.reportIndex + 1}</div>
       <div class="report-date">${params.date}</div>
     </div>
-
-    <!-- Patient Info -->
     <div class="patient-section">
       <div class="patient-title">Patient Information</div>
       <div class="patient-grid">
-        <div class="patient-item">
-          <div class="patient-label">Patient Name</div>
-          <div class="patient-value">${params.patientName}</div>
-        </div>
-        <div class="patient-item">
-          <div class="patient-label">Age</div>
-          <div class="patient-value">${params.age}</div>
-        </div>
-        <div class="patient-item">
-          <div class="patient-label">Gender</div>
-          <div class="patient-value">${params.gender}</div>
-        </div>
-        <div class="patient-item">
-          <div class="patient-label">Hair Color</div>
-          <div class="patient-value">${params.hairColor}</div>
-        </div>
-        <div class="patient-item">
-          <div class="patient-label">Eye Color</div>
-          <div class="patient-value">${params.eyeColor}</div>
-        </div>
-        <div class="patient-item">
-          <div class="patient-label">Skin Tone</div>
-          <div class="patient-value">${params.skinColor}</div>
-        </div>
+        <div class="patient-item"><div class="patient-label">Patient Name</div><div class="patient-value">${params.patientName}</div></div>
+        <div class="patient-item"><div class="patient-label">Age</div><div class="patient-value">${params.age}</div></div>
+        <div class="patient-item"><div class="patient-label">Gender</div><div class="patient-value">${params.gender}</div></div>
+        <div class="patient-item"><div class="patient-label">Hair Color</div><div class="patient-value">${params.hairColor}</div></div>
+        <div class="patient-item"><div class="patient-label">Eye Color</div><div class="patient-value">${params.eyeColor}</div></div>
+        <div class="patient-item"><div class="patient-label">Skin Tone</div><div class="patient-value">${params.skinColor}</div></div>
       </div>
     </div>
-
-    <!-- Image -->
     <div class="image-section">
       ${params.imageBase64 ? `<img src="${params.imageBase64}" alt="Skin Analysis" />` : '<p style="color:#9CA3AF;padding:20px;">No image available</p>'}
     </div>
-
-    <!-- Info Grid -->
     <div class="info-section">
       <div class="info-grid">
-        <div class="info-item">
-          <div class="info-label">Location</div>
-          <div class="info-value">${params.bodyView === 'front' ? params.frontBody : params.backBody} Body</div>
-        </div>
-        <div class="info-item">
-          <div class="info-label">Coordinates</div>
-          <div class="info-value">x: ${params.x.toFixed(1)}, y: ${params.y.toFixed(1)}</div>
-        </div>
-        <div class="info-item">
-          <div class="info-label">Report ID</div>
-          <div class="info-value">${params.moleId.substring(0, 10)}...</div>
-        </div>
+        <div class="info-item"><div class="info-label">Location</div><div class="info-value">${params.bodyView === 'front' ? params.frontBody : params.backBody} Body</div></div>
+        <div class="info-item"><div class="info-label">Coordinates</div><div class="info-value">x: ${params.x.toFixed(1)}, y: ${params.y.toFixed(1)}</div></div>
+        <div class="info-item"><div class="info-label">Report ID</div><div class="info-value">${params.moleId.substring(0, 10)}...</div></div>
       </div>
     </div>
-
-    <!-- Analysis -->
     <div class="analysis-section">
-      <div class="section-header">
-        <div class="section-title">Analysis Results</div>
-      </div>
-      <div class="analysis-box">
-        <p class="analysis-text">${params.analysis}</p>
-      </div>
+      <div class="section-header"><div class="section-title">Analysis Results</div></div>
+      <div class="analysis-box"><p class="analysis-text">${params.analysis}</p></div>
     </div>
-
-    <!-- Warning -->
     <div class="warning-section">
       <div class="warning-box">
-        <p class="warning-text">
-          ⚠️ <strong>Medical Disclaimer:</strong> This report is generated by an AI model and is
-          intended for informational purposes only. It is not a substitute for professional medical
-          advice, diagnosis, or treatment. Always consult a qualified dermatologist or healthcare
-          provider for any skin concerns.
-        </p>
+        <p class="warning-text">⚠️ <strong>Medical Disclaimer:</strong> This report is generated by an AI model and is intended for informational purposes only. Always consult a qualified dermatologist or healthcare provider for any skin concerns.</p>
       </div>
     </div>
-
-    <!-- Footer -->
     <div class="footer">
       <div class="footer-divider"></div>
       <div class="footer-brand"><span class="footer-brand-s">S</span>kinsight</div>
       <div class="footer-copy">© 2026 SkinSight. All rights reserved.</div>
-      <div class="footer-note">This is an automated report. Please do not reply directly.</div>
       <div class="footer-note">📧 skinsight.help.2025@gmail.com</div>
     </div>
-
   </div>
 </body>
 </html>
 `;
-
-
 
 export default function ReportsPage() {
     const router = useRouter();
@@ -274,16 +179,14 @@ export default function ReportsPage() {
         fontFamily: settings.fontFamily === 'System' ? undefined : settings.fontFamily,
     };
 
-    // ✅ background من settings في light mode
     const pageBg = isDark ? colors.background : settings.backgroundColor;
 
     const [moles, setMoles]                   = useState<Mole[]>([]);
     const [loading, setLoading]               = useState(true);
-    const [downloadingAll, setDownloadingAll]   = useState(false);
-    const [downloadingId,  setDownloadingId]    = useState<string | null>(null);
-    const [activeTab, setActiveTab]             = useState<string>('Reports');
+    const [downloadingAll, setDownloadingAll] = useState(false);
+    const [downloadingId,  setDownloadingId]  = useState<string | null>(null);
+    const [activeTab, setActiveTab]           = useState<string>('Reports');
 
-    // ── User profile for PDF ───────────────────────────────────
     const [patientName, setPatientName] = useState('N/A');
     const [age,         setAge]         = useState('N/A');
     const [gender,      setGender]      = useState('N/A');
@@ -328,41 +231,23 @@ export default function ReportsPage() {
         }
     };
 
-    // ── Build branded HTML for a single report ────────────────
     const downloadSingleReport = async (mole: Mole, index: number) => {
         if (downloadingId || downloadingAll) return;
         try {
-            console.log('📄 Generating PDF for report #', index + 1);
             setDownloadingId(mole.id);
             if (!mole.photoUri) return;
-
             const imageBase64 = await getImageBase64(mole.photoUri);
-            console.log('✅ Image ready for PDF');
-
             const html = buildReportHTML({
                 reportIndex: index,
                 date: new Date(mole.timestamp).toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                bodyView: mole.bodyView,
-                x: mole.x,
-                y: mole.y,
-                moleId: mole.id,
+                bodyView: mole.bodyView, x: mole.x, y: mole.y, moleId: mole.id,
                 analysis: mole.analysis || t('analysisInProgress'),
-                imageBase64,
-                frontBody: t('frontBody'),
-                backBody: t('backBody'),
-                patientName,
-                age,
-                gender,
-                hairColor,
-                eyeColor,
-                skinColor,
+                imageBase64, frontBody: t('frontBody'), backBody: t('backBody'),
+                patientName, age, gender, hairColor, eyeColor, skinColor,
             });
-
             const { uri } = await Print.printToFileAsync({ html, base64: false });
-            console.log('✅ PDF generated at:', uri);
             await shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf', dialogTitle: `SkinSight Report #${index + 1}` });
         } catch (error: any) {
-            console.log('❌ Single report error:', error?.message || error);
             if (!String(error?.message || '').includes('Another share request')) {
                 Alert.alert(t('error'), 'Failed to download report.');
             }
@@ -376,9 +261,6 @@ export default function ReportsPage() {
         try {
             setDownloadingAll(true);
             if (moles.length === 0) { Alert.alert(t('noReportsYet'), t('noReportsToDownload')); return; }
-            console.log(`📄 Generating All Reports PDF (${moles.length} reports)...`);
-
-            // Build each page using exact same buildReportHTML as ReportDetails
             const pages: string[] = [];
             for (let i = 0; i < moles.length; i++) {
                 const mole        = moles[i];
@@ -386,45 +268,22 @@ export default function ReportsPage() {
                 const page        = buildReportHTML({
                     reportIndex: i,
                     date: new Date(mole.timestamp).toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-                    bodyView: mole.bodyView,
-                    x: mole.x,
-                    y: mole.y,
-                    moleId: mole.id,
+                    bodyView: mole.bodyView, x: mole.x, y: mole.y, moleId: mole.id,
                     analysis: mole.analysis || t('analysisInProgress'),
-                    imageBase64,
-                    frontBody: t('frontBody'),
-                    backBody: t('backBody'),
-                    patientName,
-                    age,
-                    gender,
-                    hairColor,
-                    eyeColor,
-                    skinColor,
+                    imageBase64, frontBody: t('frontBody'), backBody: t('backBody'),
+                    patientName, age, gender, hairColor, eyeColor, skinColor,
                 });
-                // Strip outer html/head/body tags — keep just the page div
                 const bodyContent = page.replace(/[\s\S]*<body>/, '').replace(/<\/body>[\s\S]*/, '');
                 pages.push(bodyContent);
-                console.log(`✅ Page ${i + 1} built`);
             }
-
-            // Wrap all pages in one HTML document with shared styles
-            // Use first page to extract the <style> block
-            const firstFull = buildReportHTML({
-                reportIndex: 0, date: '', bodyView: 'front', x: 0, y: 0,
-                moleId: '', analysis: '', imageBase64: '', frontBody: '', backBody: '',
-                patientName: '', age: '', gender: '', hairColor: '', eyeColor: '', skinColor: '',
-            });
+            const firstFull = buildReportHTML({ reportIndex: 0, date: '', bodyView: 'front', x: 0, y: 0, moleId: '', analysis: '', imageBase64: '', frontBody: '', backBody: '', patientName: '', age: '', gender: '', hairColor: '', eyeColor: '', skinColor: '' });
             const styleMatch = firstFull.match(/<style>([\s\S]*?)<\/style>/);
             const sharedStyle = styleMatch ? styleMatch[1] : '';
-
             const allPagesHtml = pages.join('<div style="page-break-after:always;height:1px;"></div>');
             const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><style>${sharedStyle}</style></head><body>${allPagesHtml}</body></html>`;
-
             const { uri } = await Print.printToFileAsync({ html, base64: false });
-            console.log('✅ All reports PDF generated at:', uri);
             await shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf', dialogTitle: t('downloadAll') });
         } catch (error: any) {
-            console.log('❌ Download all error:', error?.message || error);
             Alert.alert(t('error'), 'Failed to download reports.');
         } finally {
             setDownloadingAll(false);
@@ -436,11 +295,10 @@ export default function ReportsPage() {
     };
 
     const bottomTabs = [
-        { name: 'Home',     icon: 'home-outline' },
-        { name: 'Reports',  icon: 'document-text-outline' },
-        { name: 'History',  icon: 'time-outline' },
-        { name: 'Settings', icon: 'settings-outline' },
-        { name: 'Camera',   icon: 'camera-outline' },
+        { name: 'Home',     iconImg: Icons.home     },
+        { name: 'Reports',  iconImg: Icons.reports  },
+        { name: 'History',  iconImg: Icons.history  },
+        { name: 'Settings', iconImg: Icons.settings },
     ];
 
     const handleTabPress = (tabName: string) => {
@@ -464,7 +322,7 @@ export default function ReportsPage() {
 
             <View style={[styles.header, { backgroundColor: colors.card }]}>
                 <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={() => router.back()}>
-                    <Ionicons name={isArabic ? "chevron-back" : "chevron-back"} size={24} color={colors.text} />
+                    <Ionicons name="chevron-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, customText]}>{t('reports')}</Text>
                 <View style={{ width: 40 }} />
@@ -478,7 +336,7 @@ export default function ReportsPage() {
                     </View>
                 ) : moles.length === 0 ? (
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="document-text-outline" size={80} color={isDark ? '#374151' : '#C5E3ED'} />
+                        <Image source={Icons.reports} style={styles.emptyIcon} resizeMode="contain" />
                         <Text style={[styles.emptyTitle, customText]}>{t('noReportsYet')}</Text>
                         <Text style={[styles.emptyText, customText, { color: colors.subText }]}>{t('noReportsSubtitle')}</Text>
                     </View>
@@ -550,12 +408,17 @@ export default function ReportsPage() {
                 <View style={[styles.bottomNav, { backgroundColor: colors.navBg, borderTopColor: colors.border }]}>
                     {['Home', 'Reports'].map((tabName) => {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
+                        const isActive = activeTab === tab.name;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
-                                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
-                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? colors.navActive : colors.navText} />
+                                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, isActive && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
+                                    <Image
+                                        source={tab.iconImg}
+                                        style={styles.navIconImg}
+                                        resizeMode="contain"
+                                    />
                                 </View>
-                                <Text style={[styles.navText, { color: activeTab === tab.name ? colors.navActive : colors.navText }, activeTab === tab.name && { fontWeight: '700' }]}>
+                                <Text style={[styles.navText, { color: isActive ? colors.navActive : colors.navText }, isActive && { fontWeight: '700' }]}>
                                     {tabLabels[tabName]}
                                 </Text>
                             </TouchableOpacity>
@@ -564,12 +427,17 @@ export default function ReportsPage() {
                     <View style={styles.navCenterSpacer} />
                     {['History', 'Settings'].map((tabName) => {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
+                        const isActive = activeTab === tab.name;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
-                                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
-                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? colors.navActive : colors.navText} />
+                                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, isActive && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
+                                    <Image
+                                        source={tab.iconImg}
+                                        style={styles.navIconImg}
+                                        resizeMode="contain"
+                                    />
                                 </View>
-                                <Text style={[styles.navText, { color: activeTab === tab.name ? colors.navActive : colors.navText }, activeTab === tab.name && { fontWeight: '700' }]}>
+                                <Text style={[styles.navText, { color: isActive ? colors.navActive : colors.navText }, isActive && { fontWeight: '700' }]}>
                                     {tabLabels[tabName]}
                                 </Text>
                             </TouchableOpacity>
@@ -598,6 +466,7 @@ const styles = StyleSheet.create({
     loadingContainer:   { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 100 },
     loadingText:        { marginTop: 12, fontSize: 16 },
     emptyContainer:     { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
+    emptyIcon:           { width: 90, height: 90 },
     emptyTitle:         { fontSize: 20, fontWeight: '700', marginTop: 16 },
     emptyText:          { fontSize: 14, marginTop: 8, textAlign: 'center', paddingHorizontal: 40 },
     reportCard:         { borderRadius: 16, marginBottom: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
@@ -620,6 +489,7 @@ const styles = StyleSheet.create({
     navCenterSpacer:    { flex: 1 },
     navItem:            { flex: 1, alignItems: 'center', justifyContent: 'center' },
     navIcon:            { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+    navIconImg:         { width: 24, height: 24 },
     navText:            { fontSize: 11, fontWeight: '500' },
     cameraButton:       { position: 'absolute', top: -26, alignSelf: 'center', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 6 },
 });

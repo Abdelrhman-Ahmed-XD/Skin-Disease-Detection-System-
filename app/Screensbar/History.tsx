@@ -11,6 +11,14 @@ import { useTranslation } from '../Customize/translations';
 import { useTheme } from '../ThemeContext';
 import { loadMolesFromFirestore, deleteMole as deleteMoleService } from '../../Firebase/firestoreService';
 
+// ── Custom Icon Images ─────────────────────────────────────────
+const Icons = {
+  home:     require('../../assets/Icons/home.png'),
+  reports:  require('../../assets/Icons/Reports.png'),
+  history:  require('../../assets/Icons/history.png'),
+  settings: require('../../assets/Icons/setting.png'),
+};
+
 const { width } = Dimensions.get('window');
 
 type Mole = { id: string; x: number; y: number; timestamp: number; photoUri?: string; bodyView: 'front' | 'back'; firestoreId?: string; analysis?: string; };
@@ -71,11 +79,10 @@ export default function HistoryPage() {
     };
 
     const bottomTabs = [
-        { name: 'Home',     icon: 'home-outline' },
-        { name: 'Reports',  icon: 'document-text-outline' },
-        { name: 'History',  icon: 'time-outline' },
-        { name: 'Settings', icon: 'settings-outline' },
-        { name: 'Camera',   icon: 'camera-outline' },
+        { name: 'Home',     iconImg: Icons.home     },
+        { name: 'Reports',  iconImg: Icons.reports  },
+        { name: 'History',  iconImg: Icons.history  },
+        { name: 'Settings', iconImg: Icons.settings },
     ];
 
     const handleTabPress = (tabName: string) => {
@@ -114,7 +121,7 @@ export default function HistoryPage() {
                     </View>
                 ) : moles.length === 0 ? (
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="time-outline" size={80} color={isDark ? '#374151' : '#C5E3ED'} />
+                        <Image source={Icons.history} style={styles.emptyIcon} resizeMode="contain" />
                         <Text style={[styles.emptyTitle, customText]}>{t('noHistoryYet')}</Text>
                         <Text style={[styles.emptyText, customText, { color: colors.subText }]}>{t('noHistorySubtitle')}</Text>
                     </View>
@@ -196,12 +203,17 @@ export default function HistoryPage() {
                 <View style={[styles.bottomNav, { backgroundColor: colors.navBg, borderTopColor: colors.border }]}>
                     {['Home', 'Reports'].map((tabName) => {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
+                        const isActive = activeTab === tab.name;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
-                                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
-                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? colors.navActive : colors.navText} />
+                                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, isActive && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
+                                    <Image
+                                        source={tab.iconImg}
+                                        style={styles.navIconImg}
+                                        resizeMode="contain"
+                                    />
                                 </View>
-                                <Text style={[styles.navText, { color: activeTab === tab.name ? colors.navActive : colors.navText }, activeTab === tab.name && { fontWeight: '700' }]}>
+                                <Text style={[styles.navText, { color: isActive ? colors.navActive : colors.navText }, isActive && { fontWeight: '700' }]}>
                                     {tabLabels[tabName]}
                                 </Text>
                             </TouchableOpacity>
@@ -210,12 +222,17 @@ export default function HistoryPage() {
                     <View style={styles.navCenterSpacer} />
                     {['History', 'Settings'].map((tabName) => {
                         const tab = bottomTabs.find(t => t.name === tabName)!;
+                        const isActive = activeTab === tab.name;
                         return (
                             <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
-                                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, activeTab === tab.name && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
-                                    <Ionicons name={tab.icon as any} size={26} color={activeTab === tab.name ? colors.navActive : colors.navText} />
+                                <View style={[styles.navIcon, { backgroundColor: isDark ? '#152030' : '#F9FAFB' }, isActive && { backgroundColor: isDark ? '#1E3A4A' : '#E8F4F8', borderWidth: 2, borderColor: isDark ? '#374151' : '#C5E3ED' }]}>
+                                    <Image
+                                        source={tab.iconImg}
+                                        style={styles.navIconImg}
+                                        resizeMode="contain"
+                                    />
                                 </View>
-                                <Text style={[styles.navText, { color: activeTab === tab.name ? colors.navActive : colors.navText }, activeTab === tab.name && { fontWeight: '700' }]}>
+                                <Text style={[styles.navText, { color: isActive ? colors.navActive : colors.navText }, isActive && { fontWeight: '700' }]}>
                                     {tabLabels[tabName]}
                                 </Text>
                             </TouchableOpacity>
@@ -244,6 +261,7 @@ const styles = StyleSheet.create({
     scrollContent:       { padding: 16, paddingBottom: 110 },
     countLabel:          { fontSize: 13, fontWeight: '600', marginBottom: 12, marginLeft: 4 },
     emptyContainer:      { alignItems: 'center', justifyContent: 'center', paddingVertical: 80 },
+    emptyIcon:           { width: 90, height: 90 },
     emptyTitle:          { fontSize: 20, fontWeight: '700', marginTop: 16 },
     emptyText:           { fontSize: 14, marginTop: 8, textAlign: 'center', paddingHorizontal: 40 },
     card:                { borderRadius: 16, marginBottom: 12, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
@@ -264,6 +282,7 @@ const styles = StyleSheet.create({
     navCenterSpacer:     { flex: 1 },
     navItem:             { flex: 1, alignItems: 'center', justifyContent: 'center' },
     navIcon:             { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center', marginBottom: 4 },
+    navIconImg:           { width: 34, height: 34 },
     navText:             { fontSize: 11, fontWeight: '500' },
     cameraButton:        { position: 'absolute', top: -26, alignSelf: 'center', width: 60, height: 60, borderRadius: 30, justifyContent: 'center', alignItems: 'center', borderWidth: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 6 },
 });
