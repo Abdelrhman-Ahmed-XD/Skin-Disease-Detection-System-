@@ -75,7 +75,6 @@ export default function SettingsPage() {
       const uid = auth.currentUser?.uid ?? null;
       await signOut(auth);
 
-      // Only clear user-specific data — preserve nothing sensitive
       const keysToRemove = [
         'signupDraft',
         'savedMoles',
@@ -121,8 +120,8 @@ export default function SettingsPage() {
   };
 
   const SettingsRow: React.FC<SettingsRowProps> = ({
-                                                     icon, iconColor = colors.primary, label, onPress, rightElement, isLast = false,
-                                                   }) => (
+    icon, iconColor = colors.primary, label, onPress, rightElement, isLast = false,
+  }) => (
       <TouchableOpacity
           style={[
             styles.settingsRow,
@@ -142,12 +141,13 @@ export default function SettingsPage() {
         <Text style={[
           styles.settingsLabel,
           customText,
-          { textAlign: isArabic ? 'right' : 'left' }, // ← أضف
+          { textAlign: isArabic ? 'right' : 'left' },
         ]}>
           {label}
         </Text>
+        {/* ✅ تغيير chevron-back → chevron-forward */}
         {rightElement ?? (onPress ? (
-            <Ionicons name="chevron-back" size={18} color={colors.border} />
+            <Ionicons name="chevron-forward" size={18} color={colors.border} />
         ) : null)}
       </TouchableOpacity>
   );
@@ -179,7 +179,7 @@ export default function SettingsPage() {
           </View>
         </Modal>
 
-        {/* Header - السهم ثابت دايمًا chevron-back */}
+        {/* Header - السهم ثابت chevron-back لأنه زر رجوع */}
         <View style={[styles.header, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -213,7 +213,8 @@ export default function SettingsPage() {
               <Text style={[styles.profileName, customText, { fontWeight: '700' }]}>{profileName || 'No Name'}</Text>
               <Text style={[styles.profileEmail, customText, { color: colors.subText, fontSize: Math.max(11, settings.fontSize - 3) }]}>{profileEmail || 'No Email'}</Text>
             </View>
-            <Ionicons name="chevron-back" size={20} color={colors.subText} />
+            {/* ✅ تغيير chevron-back → chevron-forward */}
+            <Ionicons name="chevron-forward" size={20} color={colors.subText} />
           </TouchableOpacity>
 
           {/* Preferences Section */}
