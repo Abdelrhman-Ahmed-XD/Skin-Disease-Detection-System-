@@ -83,7 +83,6 @@ type BodyView = 'front' | 'back';
 export default function Guest() {
   const router = useRouter();
   const { isDark, colors } = useTheme();
-  const textColor = isDark ? '#FFFFFF' : '#1F2937';
 
   const [userName,  setUserName]  = useState('Guest');
   const [bodyView,  setBodyView]  = useState<BodyView>('front');
@@ -427,7 +426,7 @@ export default function Guest() {
                 marginLeft: 4,
                 marginTop: 3,
                 fontSize: 17,
-                color: textColor,
+                color: isDark ? "#fff" : "#000",
               }}
             >
               {userName}
@@ -451,7 +450,7 @@ export default function Guest() {
       </View>
 
       <View style={styles.titleContainer}>
-        <Text style={[styles.title, { color: textColor }]}>
+        <Text style={[styles.title, { color: isDark ? "#fff" : "#000" }]}>
           Let's Check your{" "}
           <Text
             style={[

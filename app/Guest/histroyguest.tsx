@@ -6,7 +6,6 @@ import {
   StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useCustomize } from '../Customize/Customizecontext';
 import { useTheme } from '../ThemeContext';
 
 const Icons = {
@@ -19,18 +18,10 @@ const Icons = {
 export default function GuestHistoryPage() {
   const router = useRouter();
   const { isDark, colors } = useTheme();
-  const { settings } = useCustomize();
 
   // ── أبيض في الدارك مود، أسود في الليت مود ─────────────────
-  const textColor = isDark ? '#FFFFFF' : (settings.textColor || '#1F2937');
 
-  const customText = {
-    fontSize:   settings.fontSize,
-    color:      textColor,
-    fontFamily: settings.fontFamily === 'System' ? undefined : settings.fontFamily,
-  };
-
-  const pageBg      = isDark ? colors.background : settings.backgroundColor;
+  const pageBg = isDark ? colors.background : "#D8E9F0";
   const [activeTab, setActiveTab] = useState('History');
 
   useFocusEffect(React.useCallback(() => { setActiveTab('History'); }, []));
@@ -81,9 +72,15 @@ export default function GuestHistoryPage() {
           style={[styles.backButton, { borderColor: colors.border }]}
           onPress={() => router.back()}
         >
-          <Ionicons name="chevron-back" size={24} color={textColor} />
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color={isDark ? "#FFFFFF" : "#1F2937"}
+          />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, customText]}>{("history")}</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? "#fff" : "#000" }]}>
+          {"History"}
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -100,7 +97,7 @@ export default function GuestHistoryPage() {
             style={{ color: isDark ? "#004F7F" : "#fff" }}
           />
         </View>
-        <Text style={[styles.lockTitle, customText]}>
+        <Text style={[styles.lockTitle, { color: isDark ? "#fff" : "#000" }]}>
           History Unavailable
         </Text>
         <Text
@@ -108,11 +105,11 @@ export default function GuestHistoryPage() {
             styles.lockSubtitle,
             {
               color: isDark ? "#AAAAAA" : colors.subText,
-              fontFamily: customText.fontFamily,
             },
           ]}
         >
-          You need to log in or create an account to view your past scan history.
+          You need to log in or create an account to view your past scan
+          history.
         </Text>
         <TouchableOpacity
           style={[styles.signUpBtn, { backgroundColor: "#004F7F" }]}
@@ -120,14 +117,7 @@ export default function GuestHistoryPage() {
           activeOpacity={0.85}
         >
           <Ionicons name="person-add-outline" size={20} color="#fff" />
-          <Text
-            style={[
-              styles.signUpBtnText,
-              { fontFamily: customText.fontFamily },
-            ]}
-          >
-            Sign Up
-          </Text>
+          <Text style={[styles.signUpBtnText]}>Sign Up</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.loginBtn, { borderColor: "#004F7F" }]}
@@ -144,7 +134,6 @@ export default function GuestHistoryPage() {
               styles.loginBtnText,
               {
                 color: isDark ? "#fff" : "#004F7F",
-                fontFamily: customText.fontFamily,
               },
             ]}
           >
@@ -198,7 +187,7 @@ export default function GuestHistoryPage() {
                     isActive && { fontWeight: "700" },
                   ]}
                 >
-                  {tabName === "Home" ? ("home") : ("reportsTab")}
+                  {tabName === "Home" ? "home" : "reportsTab"}
                 </Text>
               </TouchableOpacity>
             );
@@ -242,7 +231,7 @@ export default function GuestHistoryPage() {
                     isActive && { fontWeight: "700" },
                   ]}
                 >
-                  {tabName === "History" ? ("historyTab") : ("settingsTab")}
+                  {tabName === "History" ? "historyTab" : "settingsTab"}
                 </Text>
               </TouchableOpacity>
             );
@@ -288,15 +277,14 @@ export default function GuestHistoryPage() {
               <View style={styles.modalIconCircle}>
                 <Ionicons name="camera-outline" size={15} color="#004F7F" />
               </View>
-              <Text style={styles.modalTitle}>
-                Login Required
-              </Text>
+              <Text style={styles.modalTitle}>Login Required</Text>
               <TouchableOpacity onPress={closeModal} style={styles.modalClose}>
                 <Ionicons name="close" size={14} color="#fff" />
               </TouchableOpacity>
             </View>
             <Text style={styles.modalDesc}>
-              You need to create an account or log in to use the camera and analyze your skin.
+              You need to create an account or log in to use the camera and
+              analyze your skin.
             </Text>
             <View style={styles.modalActions}>
               <TouchableOpacity
@@ -308,9 +296,7 @@ export default function GuestHistoryPage() {
                 activeOpacity={0.85}
               >
                 <Ionicons name="person-add-outline" size={14} color="#fff" />
-                <Text style={styles.modalSignUpText}>
-                  "Create Account"
-                </Text>
+                <Text style={styles.modalSignUpText}>"Create Account"</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalLogin}
@@ -321,9 +307,7 @@ export default function GuestHistoryPage() {
                 activeOpacity={0.85}
               >
                 <Ionicons name="log-in-outline" size={14} color="#004F7F" />
-                <Text style={styles.modalLoginText}>
-                  Log In
-                </Text>
+                <Text style={styles.modalLoginText}>Log In</Text>
               </TouchableOpacity>
             </View>
           </Animated.View>

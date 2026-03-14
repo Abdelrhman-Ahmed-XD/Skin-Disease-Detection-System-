@@ -6,24 +6,14 @@ import {
   TouchableOpacity, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useCustomize } from '../Customize/Customizecontext';
-import { useTranslation } from '../Customize/translations';
 import { useTheme } from '../ThemeContext';
 
 export default function NotificationsGuestPage() {
   const { colors, isDark } = useTheme();
-  const { settings } = useCustomize();
 
   // ── أبيض في الدارك مود، أسود في الليت مود ─────────────────
-  const textColor = isDark ? '#FFFFFF' : (settings.textColor || '#1F2937');
 
-  const customText = {
-    fontSize:   settings.fontSize,
-    color:      textColor,
-    fontFamily: settings.fontFamily === 'System' ? undefined : settings.fontFamily,
-  };
-
-  const pageBg      = isDark ? colors.background : settings.backgroundColor;
+  const pageBg = isDark ? colors.background : "#D8E9F0";
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: pageBg }]}>
@@ -38,12 +28,14 @@ export default function NotificationsGuestPage() {
           <Ionicons
             name={"chevron-back"}
             size={24}
-            color={textColor}
+            style={{ color: isDark ? "#FFFFFF" : "#1F2937" }}
           />
         </TouchableOpacity>
         <View style={styles.headerTitleRow}>
-          <Text style={[styles.headerTitle, customText]}>
-            {("notifications")}
+          <Text
+            style={[styles.headerTitle, { color: isDark ? "#fff" : "#000" }]}
+          >
+            {"Notifications"}
           </Text>
         </View>
         <View style={{ width: 40 }} />
@@ -64,7 +56,7 @@ export default function NotificationsGuestPage() {
           />
         </View>
 
-        <Text style={[styles.guestTitle, customText]}>
+        <Text style={[styles.guestTitle, { color: isDark ? "#fff" : "#000" }]}>
           Login Required
         </Text>
 
@@ -73,40 +65,29 @@ export default function NotificationsGuestPage() {
             styles.guestSubtitle,
             {
               color: isDark ? "#AAAAAA" : colors.subText,
-              fontFamily: customText.fontFamily,
-              fontSize: customText.fontSize,
             },
           ]}
         >
-          You need to sign up or log in to access notifications and use the full app.
+          You need to sign up or log in to access notifications and use the full
+          app.
         </Text>
 
         <TouchableOpacity
-          style={[
-            styles.signUpBtn,
-            { backgroundColor: "#004F7F" },
-          ]}
+          style={[styles.signUpBtn, { backgroundColor: "#004F7F" }]}
           onPress={() => router.push("/SignUp")}
         >
           <Ionicons
             name="person-add-outline"
             size={18}
-            style={{ color: "#fff"}}
+            style={{ color: "#fff" }}
           />
-          <Text
-            style={[
-              styles.signUpBtnText,
-              { fontFamily: customText.fontFamily },
-            ]}
-          >
-            Sign Up
-          </Text>
+          <Text style={[styles.signUpBtnText]}>Sign Up</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={[
             styles.loginBtn,
-            { borderColor: isDark ? "#fff" : "#004F7F" },
+            { borderColor:"#004F7F" },
           ]}
           onPress={() => router.push("/Login1")}
         >
@@ -120,7 +101,6 @@ export default function NotificationsGuestPage() {
               styles.loginBtnText,
               {
                 color: isDark ? "#fff" : "#004F7F",
-                fontFamily: customText.fontFamily,
               },
             ]}
           >

@@ -5,7 +5,6 @@ import {
   LayoutAnimation, Platform, SafeAreaView, ScrollView,
   StatusBar, StyleSheet, Text, TouchableOpacity, UIManager, View,
 } from 'react-native';
-import { useCustomize } from '../Customize/Customizecontext';
 import { useTheme } from '../ThemeContext';
 
 if (Platform.OS === 'android') {
@@ -27,20 +26,12 @@ const faqsEn = [
 ];
 export default function HelpPage() {
   const { colors, isDark } = useTheme();
-  const { settings } = useCustomize();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
   // ── أبيض في الدارك مود، أسود في الليت مود ─────────────────
-  const textColor = isDark ? '#FFFFFF' : (settings.textColor || '#1F2937');
 
-  const customText = {
-    fontSize:   settings.fontSize,
-    color:      textColor,
-    fontFamily: settings.fontFamily === 'System' ? undefined : settings.fontFamily,
-  };
-
-  const pageBg      = isDark ? colors.background : settings.backgroundColor;
-  const accentColor = isDark ? '#4BA3C7' : '#2A7DA0';
+  const pageBg = isDark ? colors.background : "#D8E9F0";
+  const accentColor = "#4BA3C7";
   const faqs        = faqsEn;
 
   const toggle = (index: number) => {
@@ -53,44 +44,105 @@ export default function HelpPage() {
       <StatusBar barStyle={colors.statusBar} backgroundColor={pageBg} />
 
       <View style={[styles.header, { backgroundColor: colors.card }]}>
-        <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color={textColor} />
+        <TouchableOpacity
+          style={[styles.backButton, { borderColor: colors.border }]}
+          onPress={() => router.back()}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color={isDark ? "#FFFFFF" : "#1F2937"}
+          />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, customText]}>{('help')}</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? "#fff" : "#000" }]}>
+          {"Help"}
+        </Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.subtitle, customText, { textAlign:'left' }]}>{('faqSubtitle')}</Text>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text
+          style={[
+            styles.subtitle,
+            { textAlign: "left" },
+            { color: isDark ? "#fff" : "#000" },
+          ]}
+        >
+          {"faqSubtitle"}
+        </Text>
 
         {faqs.map((faq, index) => {
           const isOpen = openIndex === index;
           return (
-            <View key={index} style={[styles.card, { backgroundColor: colors.card }, isOpen && { borderColor: accentColor }]}>
+            <View
+              key={index}
+              style={[
+                styles.card,
+                { backgroundColor: colors.card },
+                isOpen && { borderColor: accentColor },
+              ]}
+            >
               <TouchableOpacity
-                style={[styles.questionRow, { flexDirection: 'row' }]}
+                style={[styles.questionRow, { flexDirection: "row" }]}
                 onPress={() => toggle(index)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.questionText, customText, {
-                  // السؤال المفتوح يأخذ لون accent، غيره يأخذ textColor
-                  color: isOpen ? accentColor : textColor,
-                  textAlign:'left',
-                }]}>
+                <Text
+                  style={[
+                    styles.questionText,
+                    {
+                      // السؤال المفتوح يأخذ لون accent، غيره يأخذ textColor
+                      color: isDark ? "#FFFFFF" : "#1F2937",
+                      textAlign: "left",
+                    },
+                  ]}
+                >
                   {faq.question}
                 </Text>
-                <View style={[styles.arrowWrapper, { borderColor: accentColor }, isOpen && { backgroundColor: accentColor }]}>
-                  <Ionicons name={isOpen ? 'chevron-down' : ('chevron-forward')} size={16} color={isOpen ? '#FFFFFF' : accentColor} />
+                <View
+                  style={[
+                    styles.arrowWrapper,
+                    { borderColor: accentColor },
+                    isOpen && { backgroundColor: accentColor },
+                  ]}
+                >
+                  <Ionicons
+                    name={isOpen ? "chevron-down" : "chevron-forward"}
+                    size={16}
+                    color={isOpen ? "#FFFFFF" : accentColor}
+                  />
                 </View>
               </TouchableOpacity>
 
               {isOpen && (
                 <View style={styles.answersContainer}>
-                  <View style={[styles.divider, { backgroundColor: isDark ? '#2A3F50' : '#E5F0F6' }]} />
+                  <View
+                    style={[
+                      styles.divider,
+                      { backgroundColor: isDark ? "#2A3F50" : "#E5F0F6" },
+                    ]}
+                  />
                   {faq.answers.map((answer, i) => (
-                    <View key={i} style={[styles.answerRow, { flexDirection:'row' }]}>
-                      <Text style={[styles.bullet, { color: accentColor }]}>←</Text>
-                      <Text style={[styles.answerText, customText, { textAlign: 'left' }]}>{answer}</Text>
+                    <View
+                      key={i}
+                      style={[styles.answerRow, { flexDirection: "row" }]}
+                    >
+                      <Text style={[styles.bullet, { color: accentColor }]}>
+                        →
+                      </Text>
+                      <Text
+                        style={[
+                          styles.answerText,
+                          { textAlign: "left" },
+                          { color: isDark ? "#FFFFFF" : "#000" },
+                        ]}
+                      >
+                        {answer}
+                      </Text>
                     </View>
                   ))}
                 </View>

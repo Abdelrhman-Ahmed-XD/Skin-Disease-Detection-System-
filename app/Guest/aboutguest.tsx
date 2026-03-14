@@ -13,9 +13,7 @@ export default function AboutPage() {
   const textColor = isDark ? '#FFFFFF' : (settings.textColor || '#1F2937');
 
   const customText = {
-    fontSize:   settings.fontSize,
     color:      textColor,
-    fontFamily: settings.fontFamily === 'System' ? undefined : settings.fontFamily,
   };
 
   const pageBg = isDark ? colors.background : settings.backgroundColor;
@@ -28,13 +26,13 @@ export default function AboutPage() {
         <TouchableOpacity style={[styles.backButton, { borderColor: colors.border }]} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color={textColor} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, customText]}>{('aboutUs')}</Text>
+        <Text style={[styles.headerTitle, customText]}>{('AboutUs')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <Text style={[styles.mainTitle, customText, { textAlign:'center' }]}>{('appName')}</Text>
-        <Text style={[styles.mainSubtitle, { color: '#2A7DA0', textAlign:'center', fontSize: settings.fontSize, fontFamily: customText.fontFamily }]}>{('usingAI')}</Text>
+        <Text style={[styles.mainTitle, customText, { textAlign:'center' }]}>{('AppName')}</Text>
+        <Text style={[styles.mainSubtitle, { color: '#2A7DA0', textAlign:'center'}]}>{('UsingAI')}</Text>
         <View style={[styles.divider, { backgroundColor: '#2A7DA0' }]} />
 
         <Section title={'Introduction'} colors={colors}  customText={customText}>

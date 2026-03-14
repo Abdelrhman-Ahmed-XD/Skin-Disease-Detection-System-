@@ -6,7 +6,6 @@ import {
   StyleSheet, Switch, Text, TouchableOpacity, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useCustomize } from '../Customize/Customizecontext';
 import { useTheme } from '../ThemeContext';
 
 const Icons = {
@@ -30,17 +29,10 @@ const ICON_SIZES = {
 export default function GuestSettingsPage() {
   const router = useRouter();
   const { isDark, toggleTheme, colors } = useTheme();
-  const { settings } = useCustomize();
 
-  const textColor = isDark ? '#FFFFFF' : (settings.textColor || '#1F2937');
+  const color = isDark ? "#fff" : "#000";
 
-  const customText = {
-    fontSize:   settings.fontSize,
-    color:      textColor,
-    fontFamily: settings.fontFamily === 'System' ? undefined : settings.fontFamily,
-  };
-
-  const pageBg = isDark ? colors.background : settings.backgroundColor;
+  const pageBg = isDark ? colors.background : "#D8E9F0";
   const [activeTab, setActiveTab] = useState('Settings');
 
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -82,7 +74,7 @@ export default function GuestSettingsPage() {
 
   type RowProps = {
     style?:        object;
-    iconBgColor?:  string;   // ← لون الباكجراوند بتاع الأيكون
+    iconBgColor?:  string;
     iconImg:       any;
     iconSize:      { width: number; height: number };
     label:         string;
@@ -90,10 +82,12 @@ export default function GuestSettingsPage() {
     rightElement?: React.ReactNode;
     isLast?:       boolean;
     disabled?:     boolean;
+    labelcolor:    string;  // ← هنا
   };
 
+  // ── التعديل: ضفنا labelcolor في الـ destructuring وطبقناه ──
   const SettingsRow: React.FC<RowProps> = ({
-    style, iconBgColor, iconImg, iconSize, label, onPress, rightElement, isLast = false, disabled = false,
+    style, iconBgColor, labelcolor, iconImg, iconSize, label, onPress, rightElement, isLast = false, disabled = false,
   }) => (
     <TouchableOpacity
       style={[
@@ -109,13 +103,14 @@ export default function GuestSettingsPage() {
         styles.settingsIconWrap,
         {
           marginRight: 14,
-          marginLeft: 0,
-          backgroundColor: iconBgColor ?? (isDark ? '#1A3A4A' : '#fff'),  // ← هنا
+          marginLeft:  0,
+          backgroundColor: iconBgColor ?? (isDark ? '#1A3A4A' : '#fff'),
         },
       ]}>
         <Image source={iconImg} style={{ width: iconSize.width, height: iconSize.height }} resizeMode="contain" />
       </View>
-      <Text style={[styles.settingsLabel, customText]}>
+      {/* ── التعديل: طبّقنا labelcolor على الـ Text ── */}
+      <Text style={[styles.settingsLabel, { color: labelcolor }]}>
         {label}
       </Text>
       {rightElement ?? (onPress && !disabled
@@ -125,10 +120,7 @@ export default function GuestSettingsPage() {
   );
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: pageBg }]}
-      edges={["top"]}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: pageBg }]} edges={["top"]}>
       <StatusBar barStyle={colors.statusBar} backgroundColor={pageBg} />
 
       {/* Header */}
@@ -137,61 +129,28 @@ export default function GuestSettingsPage() {
           style={[styles.backButton, { borderColor: colors.border }]}
           onPress={() => router.back()}
         >
-          <Ionicons name="chevron-back" size={24} color={textColor} />
+          <Ionicons name="chevron-back" size={24} style={{ color: isDark ? "#FFFFFF" : "#1F2937" }} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, customText]}>{"settings"}</Text>
+        <Text style={[styles.headerTitle, { color: isDark ? "#fff" : "#000" }]}>Settings</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
         {/* Guest Profile */}
         <TouchableOpacity
-          style={[
-            styles.profileCard,
-            {
-              backgroundColor: colors.card,
-              flexDirection: "row",
-            },
-          ]}
+          style={[styles.profileCard, { backgroundColor: colors.card, flexDirection: "row" }]}
           onPress={openLoginModal}
           activeOpacity={0.8}
         >
-          <View
-            style={[
-              styles.profileAvatar,
-              {
-                backgroundColor: isDark ? "#2A3F50" : "#fff",
-                marginRight: 14,
-                marginLeft: 0,
-              },
-            ]}
-          >
-            <Image
-              source={Icons.person}
-              style={styles.profileAvatarIconImg}
-              resizeMode="contain"
-            />
+          <View style={[styles.profileAvatar, { backgroundColor: isDark ? "#2A3F50" : "#fff", marginRight: 14, marginLeft: 0 }]}>
+            <Image source={Icons.person} style={styles.profileAvatarIconImg} resizeMode="contain" />
           </View>
           <View style={[styles.profileInfo, { alignItems: "flex-start" }]}>
-            <Text
-              style={[styles.profileName, customText, { fontWeight: "700" }]}
-            >
+            <Text style={[styles.profileName, { fontWeight: "700", color: isDark ? "#fff" : "#000" }]}>
               Guest
             </Text>
-            <Text
-              style={[
-                styles.profileEmail,
-                {
-                  color: isDark ? "#AAAAAA" : colors.subText,
-                  fontFamily: customText.fontFamily,
-                  fontSize: customText.fontSize,
-                },
-              ]}
-            >
+            <Text style={[styles.profileEmail, { color: isDark ? "#AAAAAA" : colors.subText }]}>
               Tap to sign in
             </Text>
           </View>
@@ -201,24 +160,16 @@ export default function GuestSettingsPage() {
         </TouchableOpacity>
 
         {/* Preferences — Dark Mode */}
-        <Text
-          style={[
-            styles.sectionTitle,
-            {
-              color: isDark ? "#AAAAAA" : colors.subText,
-              textAlign: "left",
-              fontSize: customText.fontSize ? customText.fontSize * 0.75 : 13,
-            },
-          ]}
-        >
-          {"preferences"}
+        <Text style={[styles.sectionTitle, { color: isDark ? "#AAAAAA" : colors.subText, textAlign: "left" }]}>
+          PREFERENCES
         </Text>
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <SettingsRow
             iconImg={Icons.darkMode}
             iconSize={ICON_SIZES.darkMode}
-            iconBgColor={isDark ? "#1E2A35" : "#fff"} // ← غيّر اللون هنا
-            label={"darkMode"}
+            iconBgColor={isDark ? "#1E2A35" : "#fff"}
+            label="Dark Mode"
+            labelcolor={color}
             isLast
             rightElement={
               <Switch
@@ -232,89 +183,45 @@ export default function GuestSettingsPage() {
         </View>
 
         {/* App — About & Help */}
-        <Text
-          style={[
-            styles.sectionTitle,
-            {
-              color: isDark ? "#AAAAAA" : colors.subText,
-              textAlign: "left",
-              fontSize: customText.fontSize ? customText.fontSize * 0.75 : 13,
-            },
-          ]}
-        >
-          {"app"}
+        <Text style={[styles.sectionTitle, { color: isDark ? "#AAAAAA" : colors.subText, textAlign: "left" }]}>
+          APP
         </Text>
         <View style={[styles.card, { backgroundColor: colors.card }]}>
           <SettingsRow
-            style={{
-              backgroundColor: isDark ? "#1E2A35" : "#fff",
-            }}
+            style={{ backgroundColor: isDark ? "#1E2A35" : "#fff" }}
             iconImg={Icons.about}
             iconSize={ICON_SIZES.about}
-            iconBgColor={isDark ? "#1E2A35" : "#fff"} // ← غيّر اللون هنا
-            label={"about"}
+            iconBgColor={isDark ? "#1E2A35" : "#fff"}
+            label="About"
+            labelcolor={color}
             onPress={() => router.push("/Guest/aboutguest")}
           />
           <SettingsRow
             style={{ backgroundColor: isDark ? "#1E2A35" : "#fff" }}
             iconImg={Icons.help}
             iconSize={ICON_SIZES.help}
-            iconBgColor={isDark ? "#1E2A35" : "#fff"} // ← غيّر اللون هنا
-            label={"helpSupport"}
+            iconBgColor={isDark ? "#1E2A35" : "#fff"}
+            label="Help & Support"
+            labelcolor={color}
             onPress={() => router.push("/Guest/helpguest")}
             isLast
-            
           />
         </View>
 
         {/* CTA */}
-        <View
-          style={[
-            styles.ctaCard,
-            {
-              backgroundColor: isDark ? "#1E2A35" : "#E8F4F8",
-              borderColor: "#C5E3ED",
-            },
-          ]}
-        >
-          <Ionicons
-            name="lock-closed-outline"
-            size={22}
-            style={{ marginBottom: 8, color: isDark ? "#fff" : "#004F7F" }}
-          />
-          <Text
-            style={[styles.ctaText, { color: isDark ? "#FFFFFF" : "#374151" }]}
-          >
-            Sign in to unlock all features including language, customization,
-            notifications, and your personal data.
+        <View style={[styles.ctaCard, { backgroundColor: isDark ? "#1E2A35" : "#E8F4F8", borderColor: "#C5E3ED" }]}>
+          <Ionicons name="lock-closed-outline" size={22} style={{ marginBottom: 8, color: isDark ? "#fff" : "#004F7F" }} />
+          <Text style={[styles.ctaText, { color: isDark ? "#FFFFFF" : "#374151" }]}>
+            Sign in to unlock all features including language, customization, notifications, and your personal data.
           </Text>
           <View style={styles.ctaButtons}>
-            <TouchableOpacity
-              style={[styles.ctaSignUp, { backgroundColor: "#004F7F" }]}
-              onPress={() => router.push("/SignUp")}
-              activeOpacity={0.85}
-            >
+            <TouchableOpacity style={[styles.ctaSignUp, { backgroundColor: "#004F7F" }]} onPress={() => router.push("/SignUp")} activeOpacity={0.85}>
               <Ionicons name="person-add-outline" size={15} color="#fff" />
               <Text style={styles.ctaSignUpText}>Sign Up</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.ctaLogin, { borderColor: "#004F7F" }]}
-              onPress={() => router.push("/Login1")}
-              activeOpacity={0.85}
-            >
-              <Ionicons
-                name="log-in-outline"
-                size={28}
-                style={{ color: isDark ? "#fff" : "#004F7F" }}
-              />
-              <Text
-                style={[
-                  styles.ctaLoginText,
-                  { color: isDark ? "#fff" : "#004F7F" },
-                ]}
-              >
-                Log In
-              </Text>
+            <TouchableOpacity style={[styles.ctaLogin, { borderColor: "#004F7F" }]} onPress={() => router.push("/Login1")} activeOpacity={0.85}>
+              <Ionicons name="log-in-outline" size={28} style={{ color: isDark ? "#fff" : "#004F7F" }} />
+              <Text style={[styles.ctaLoginText, { color: isDark ? "#fff" : "#004F7F" }]}>Log In</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -322,51 +229,17 @@ export default function GuestSettingsPage() {
 
       {/* Bottom Nav */}
       <View style={styles.bottomNavContainer}>
-        <View
-          style={[
-            styles.bottomNav,
-            { backgroundColor: colors.navBg, borderTopColor: colors.border },
-          ]}
-        >
+        <View style={[styles.bottomNav, { backgroundColor: colors.navBg, borderTopColor: colors.border }]}>
           {["Home", "Reports"].map((tabName) => {
             const tab = bottomTabs.find((t) => t.name === tabName)!;
             const isActive = activeTab === tab.name;
             return (
-              <TouchableOpacity
-                key={tab.name}
-                style={styles.navItem}
-                onPress={() => handleTabPress(tab.name)}
-              >
-                <View
-                  style={[
-                    styles.navIcon,
-                    isActive && {
-                      backgroundColor: isDark ? "#1E3A4A" : "#E8F4F8",
-                      borderWidth: 2,
-                      borderColor: isDark ? "#00A3A3" : "#C5E3ED",
-                    },
-                  ]}
-                >
-                  <Image
-                    source={tab.iconImg}
-                    style={styles.navIconImg}
-                    resizeMode="contain"
-                  />
+              <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
+                <View style={[styles.navIcon, isActive && { backgroundColor: isDark ? "#1E3A4A" : "#E8F4F8", borderWidth: 2, borderColor: isDark ? "#00A3A3" : "#C5E3ED" }]}>
+                  <Image source={tab.iconImg} style={styles.navIconImg} resizeMode="contain" />
                 </View>
-                <Text
-                  style={[
-                    styles.navText,
-                    {
-                      color: isActive
-                        ? colors.navActive
-                        : isDark
-                          ? "#FFFFFF"
-                          : "#6B7280",
-                    },
-                    isActive && { fontWeight: "700" },
-                  ]}
-                >
-                  {tabName === "Home" ? "home" : "reportsTab"}
+                <Text style={[styles.navText, { color: isActive ? colors.navActive : isDark ? "#FFFFFF" : "#6B7280" }, isActive && { fontWeight: "700" }]}>
+                  {tabName === "Home" ? "Home" : "Reports"}
                 </Text>
               </TouchableOpacity>
             );
@@ -376,123 +249,49 @@ export default function GuestSettingsPage() {
             const tab = bottomTabs.find((t) => t.name === tabName)!;
             const isActive = activeTab === tab.name;
             return (
-              <TouchableOpacity
-                key={tab.name}
-                style={styles.navItem}
-                onPress={() => handleTabPress(tab.name)}
-              >
-                <View
-                  style={[
-                    styles.navIcon,
-                    isActive && {
-                      backgroundColor: isDark ? "#1E3A4A" : "#E8F4F8",
-                      borderWidth: 2,
-                      borderColor: isDark ? "#00A3A3" : "#C5E3ED",
-                    },
-                  ]}
-                >
-                  <Image
-                    source={tab.iconImg}
-                    style={styles.navIconImg}
-                    resizeMode="contain"
-                  />
+              <TouchableOpacity key={tab.name} style={styles.navItem} onPress={() => handleTabPress(tab.name)}>
+                <View style={[styles.navIcon, isActive && { backgroundColor: isDark ? "#1E3A4A" : "#E8F4F8", borderWidth: 2, borderColor: isDark ? "#00A3A3" : "#C5E3ED" }]}>
+                  <Image source={tab.iconImg} style={styles.navIconImg} resizeMode="contain" />
                 </View>
-                <Text
-                  style={[
-                    styles.navText,
-                    {
-                      color: isActive
-                        ? colors.navActive
-                        : isDark
-                          ? "#FFFFFF"
-                          : "#6B7280",
-                    },
-                    isActive && { fontWeight: "700" },
-                  ]}
-                >
-                  {tabName === "History" ? "historyTab" : "settingsTab"}
+                <Text style={[styles.navText, { color: isActive ? colors.navActive : isDark ? "#FFFFFF" : "#6B7280" }, isActive && { fontWeight: "700" }]}>
+                  {tabName === "History" ? "History" : "Settings"}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </View>
         <TouchableOpacity
-          style={[
-            styles.cameraButton,
-            {
-              backgroundColor: colors.navBg,
-              borderColor: isDark ? "#374151" : "#C5E3ED",
-            },
-          ]}
+          style={[styles.cameraButton, { backgroundColor: colors.navBg, borderColor: isDark ? "#374151" : "#C5E3ED" }]}
           onPress={openLoginModal}
           activeOpacity={0.85}
         >
-          <Ionicons
-            name="camera-outline"
-            size={30}
-            color={isDark ? "#FFFFFF" : "#6B7280"}
-          />
+          <Ionicons name="camera-outline" size={30} color={isDark ? "#FFFFFF" : "#6B7280"} />
         </TouchableOpacity>
       </View>
 
       {/* Login Modal */}
       {showLoginModal && (
         <View style={styles.modalOverlay} pointerEvents="box-none">
-          <TouchableOpacity
-            style={StyleSheet.absoluteFillObject}
-            activeOpacity={1}
-            onPress={closeLoginModal}
-          />
-          <Animated.View
-            style={[
-              styles.modalBox,
-              {
-                backgroundColor: "#004F7F",
-                opacity: modalFade,
-                transform: [{ scale: modalScale }],
-              },
-            ]}
-          >
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeLoginModal} />
+          <Animated.View style={[styles.modalBox, { backgroundColor: "#004F7F", opacity: modalFade, transform: [{ scale: modalScale }] }]}>
             <View style={styles.modalHeader}>
               <View style={styles.modalIconCircle}>
-                <Ionicons
-                  name="lock-closed-outline"
-                  size={18}
-                  color="#004F7F"
-                />
+                <Ionicons name="lock-closed-outline" size={18} color="#004F7F" />
               </View>
               <Text style={styles.modalTitle}>Login Required</Text>
-              <TouchableOpacity
-                onPress={closeLoginModal}
-                style={styles.modalClose}
-              >
+              <TouchableOpacity onPress={closeLoginModal} style={styles.modalClose}>
                 <Ionicons name="close" size={14} color="#fff" />
               </TouchableOpacity>
             </View>
             <Text style={styles.modalDesc}>
-              This feature is only available to registered users. Create an
-              account or log in to continue.
+              This feature is only available to registered users. Create an account or log in to continue.
             </Text>
             <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.modalSignUp}
-                onPress={() => {
-                  closeLoginModal();
-                  router.push("/SignUp");
-                }}
-                activeOpacity={0.85}
-              >
+              <TouchableOpacity style={styles.modalSignUp} onPress={() => { closeLoginModal(); router.push("/SignUp"); }} activeOpacity={0.85}>
                 <Ionicons name="person-add-outline" size={14} color="#fff" />
                 <Text style={styles.modalSignUpText}>Create Account</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalLogin}
-                onPress={() => {
-                  closeLoginModal();
-                  router.push("/Login1");
-                }}
-                activeOpacity={0.85}
-              >
+              <TouchableOpacity style={styles.modalLogin} onPress={() => { closeLoginModal(); router.push("/Login1"); }} activeOpacity={0.85}>
                 <Ionicons name="log-in-outline" size={14} color="#004F7F" />
                 <Text style={styles.modalLoginText}>Log In</Text>
               </TouchableOpacity>
