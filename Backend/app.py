@@ -512,7 +512,7 @@ def _get_gemini_model():
         if key:
             genai.configure(api_key=key)
             _gemini_model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",
+                model_name="gemini-2.5-flash",
                 system_instruction=CHAT_SYSTEM_PROMPT,
             )
     return _gemini_model
@@ -523,7 +523,7 @@ def _chat_via_groq(messages: list) -> str:
         raise RuntimeError("Groq client not available")
     full_messages = [{"role": "system", "content": CHAT_SYSTEM_PROMPT}] + messages
     completion = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="openai/gpt-oss-120b",
         messages=full_messages,
         max_tokens=1024,
         temperature=0.7,
